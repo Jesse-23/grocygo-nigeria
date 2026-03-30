@@ -45,7 +45,7 @@ export const categories: Category[] = [
 export const products: Product[] = [
   {
     id: "1", name: "Fresh Tomatoes", price: 1500, originalPrice: 2000,
-    image: "https://images.unsplash.com/photo-1546470427-0d4db154ceb8?w=400&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop",
     category: "vegetables", description: "Fresh, ripe tomatoes perfect for stew and jollof rice. Locally sourced from farms in Jos, Plateau State.", inStock: true, rating: 4.8, unit: "per basket", popular: true,
   },
   {
@@ -105,7 +105,7 @@ export const products: Product[] = [
   },
   {
     id: "13", name: "Morning Fresh Dish Soap", price: 1200,
-    image: "https://images.unsplash.com/photo-1585441695325-21557f83020f?w=400&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1563453392212-326f5e854473?w=400&h=400&fit=crop",
     category: "household", description: "Effective dish washing liquid, 450ml.", inStock: true, rating: 4.4, unit: "per bottle",
   },
   {
