@@ -105,7 +105,7 @@ export const products: Product[] = [
   },
   {
     id: "13", name: "Morning Fresh Dish Soap", price: 1200,
-    image: "https://images.unsplash.com/photo-1585441695325-21557f83020f?w=400&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1563453392212-326f5e854473?w=400&h=400&fit=crop",
     category: "household", description: "Effective dish washing liquid, 450ml.", inStock: true, rating: 4.4, unit: "per bottle",
   },
   {
