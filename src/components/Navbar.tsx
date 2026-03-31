@@ -77,7 +77,7 @@ const Navbar = () => {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "tween", duration: 0.3 }}
-              className="fixed top-0 left-0 z-50 h-full w-3/4 max-w-xs bg-card border-r border-border shadow-xl md:hidden"
+              className="fixed top-0 right-0 z-50 h-full w-3/4 max-w-xs bg-card border-l border-border shadow-xl md:hidden"
             >
               <div className="flex items-center justify-between px-4 h-16 border-b border-border">
                 <span className="text-xl font-extrabold text-gradient-hero">GrocyGo</span>
