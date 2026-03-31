@@ -77,21 +77,21 @@ const Navbar = () => {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "tween", duration: 0.3 }}
-              className="fixed top-0 right-0 z-50 h-full w-3/4 max-w-xs bg-white border-l border-border shadow-xl md:hidden"
+              className="fixed top-0 right-0 z-50 h-full w-3/4 max-w-xs bg-[#FFFFFF] border-l border-border shadow-2xl md:hidden"
             >
-              <div className="flex items-center justify-between px-4 h-16 border-b border-border">
+              <div className="flex items-center justify-between px-5 h-16 border-b border-border/60 shadow-sm bg-[#FFFFFF]">
                 <span className="text-xl font-extrabold text-gradient-hero">GrocyGo</span>
-                <button onClick={() => setMobileOpen(false)} className="p-2 hover:bg-secondary rounded-full">
-                  <X className="h-5 w-5" />
+                <button onClick={() => setMobileOpen(false)} className="p-2 hover:bg-[#DCFCE7] rounded-full transition-colors">
+                  <X className="h-5 w-5 text-[#0F172A]" />
                 </button>
               </div>
-              <div className="px-4 py-6 flex flex-col gap-1">
+              <div className="px-4 py-6 flex flex-col gap-1 bg-[#FFFFFF] h-full">
                 {links.map((l) => (
                   <Link
                     key={l.to}
                     to={l.to}
                     onClick={() => setMobileOpen(false)}
-                    className="text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary/50 py-3 px-3 rounded-lg transition-colors"
+                    className="text-[15px] font-medium text-[#0F172A] hover:text-primary hover:bg-[#DCFCE7] active:bg-[#DCFCE7] py-3.5 px-4 rounded-lg transition-colors"
                   >
                     {l.label}
                   </Link>
@@ -99,7 +99,7 @@ const Navbar = () => {
                 <Link
                   to="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary/50 py-3 px-3 rounded-lg transition-colors"
+                  className="text-[15px] font-medium text-[#0F172A] hover:text-primary hover:bg-[#DCFCE7] active:bg-[#DCFCE7] py-3.5 px-4 rounded-lg transition-colors"
                 >
                   Login / Signup
                 </Link>
