@@ -73,9 +73,9 @@ const Navbar = () => {
               onClick={() => setMobileOpen(false)}
             />
             <motion.div
-              initial={{ x: "-100%" }}
+              initial={{ x: "100%" }}
               animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
+              exit={{ x: "100%" }}
               transition={{ type: "tween", duration: 0.3 }}
               className="fixed top-0 left-0 z-50 h-full w-3/4 max-w-xs bg-card border-r border-border shadow-xl md:hidden"
             >
