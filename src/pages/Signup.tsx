@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import GoogleOAuthButton from "@/components/GoogleOAuthButton";
 
 const Signup = () => {
   const [showPw, setShowPw] = useState(false);
@@ -56,6 +57,31 @@ const Signup = () => {
             Sign Up
           </motion.button>
         </motion.form>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border"></div>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+          </div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <GoogleOAuthButton
+            onSuccess={(response) => {
+              console.log("Signup successful:", response);
+              // TODO: Handle successful signup - redirect to dashboard or email verification
+            }}
+            onError={() => {
+              console.error("Google signup failed");
+            }}
+          />
+        </motion.div>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Already have an account?{" "}
