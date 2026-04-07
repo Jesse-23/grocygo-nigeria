@@ -12,6 +12,9 @@ interface Props {
 const ProductCard = ({ product, index = 0 }: Props) => {
   const { addItem } = useCart();
 
+  // Helper to check if item is in stock based on database column
+  const hasStock = product.stock_quantity > 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -22,17 +25,21 @@ const ProductCard = ({ product, index = 0 }: Props) => {
       <Link to={`/product/${product.id}`}>
         <div className="relative overflow-hidden aspect-square bg-secondary">
           <img
-            src={product.image}
+            // Corrected to look at your frontend's public folder
+            src={`http://localhost:5173${product.image_url}`}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
           />
+          
           {product.originalPrice && (
             <span className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full">
               -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
             </span>
           )}
-          {!product.inStock && (
+
+          {/* Logic updated: Show Out of Stock if stock_quantity is 0 or less */}
+          {!hasStock && (
             <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
               <span className="bg-card text-foreground text-sm font-semibold px-4 py-2 rounded-full">
                 Out of Stock
@@ -41,27 +48,37 @@ const ProductCard = ({ product, index = 0 }: Props) => {
           )}
         </div>
       </Link>
+
       <div className="p-4">
-        <span className="text-xs font-medium text-primary uppercase tracking-wide">{product.category}</span>
+        <span className="text-xs font-medium text-primary uppercase tracking-wide">
+          {product.category}
+        </span>
+        
         <Link to={`/product/${product.id}`}>
           <h3 className="font-semibold text-foreground mt-1 group-hover:text-primary transition-colors line-clamp-1">
             {product.name}
           </h3>
         </Link>
+        
         <p className="text-xs text-muted-foreground mt-0.5">{product.unit}</p>
+
         <div className="flex items-center justify-between mt-3">
           <div>
-            <span className="text-lg font-bold text-foreground">{formatNaira(product.price)}</span>
+            <span className="text-lg font-bold text-foreground">
+              {formatNaira(product.price)}
+            </span>
             {product.originalPrice && (
               <span className="text-xs text-muted-foreground line-through ml-2">
                 {formatNaira(product.originalPrice)}
               </span>
             )}
           </div>
+
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={() => product.inStock && addItem(product)}
-            disabled={!product.inStock}
+            // Only allow adding if hasStock is true
+            onClick={() => hasStock && addItem(product)}
+            disabled={!hasStock}
             className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:shadow-button transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ShoppingCart className="h-4 w-4" />

@@ -1,8 +1,23 @@
 import { motion } from "framer-motion";
 import { Package, Clock, CheckCircle, Truck } from "lucide-react";
-import { sampleOrders, formatNaira } from "@/data/products";
+import { formatNaira } from "@/data/products"; // Removed sampleOrders from import
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+
+// Local sample data to prevent crashes until your Orders API is ready
+const sampleOrders = [
+  {
+    id: "ORD-001",
+    date: "2026-03-25",
+    status: "delivered",
+    address: "12 Allen Avenue, Ikeja, Lagos",
+    total: 11500,
+    items: [
+      { product: { id: 1, name: "Fresh Tomatoes", price: 1500 }, quantity: 2 },
+      { product: { id: 12, name: "Local Rice (5kg)", price: 8500 }, quantity: 1 }
+    ]
+  }
+];
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: "Pending", color: "bg-accent/20 text-accent", icon: <Clock className="h-4 w-4" /> },
@@ -23,7 +38,7 @@ const Dashboard = () => (
 
       <div className="space-y-4">
         {sampleOrders.map((order, i) => {
-          const status = statusConfig[order.status];
+          const status = statusConfig[order.status] || statusConfig.pending;
           return (
             <motion.div
               key={order.id}

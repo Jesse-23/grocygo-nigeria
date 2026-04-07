@@ -5,8 +5,8 @@ import { toast } from "sonner";
 interface CartContextType {
   items: CartItem[];
   addItem: (product: Product, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (productId: number) => void; // Changed string to number
+  updateQuantity: (productId: number, quantity: number) => void; // Changed string to number
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -19,6 +19,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addItem = useCallback((product: Product, quantity = 1) => {
     setItems((prev) => {
+      // Comparison now works with number IDs
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
         return prev.map((i) =>
@@ -30,12 +31,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success(`${product.name} added to cart`);
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
+  const removeItem = useCallback((productId: number) => { // Changed string to number
     setItems((prev) => prev.filter((i) => i.product.id !== productId));
     toast.info("Item removed from cart");
   }, []);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
+  const updateQuantity = useCallback((productId: number, quantity: number) => { // Changed string to number
     if (quantity <= 0) {
       setItems((prev) => prev.filter((i) => i.product.id !== productId));
       return;

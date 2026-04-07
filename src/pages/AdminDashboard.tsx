@@ -1,12 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Package, DollarSign, Truck, Plus, Pencil, Trash2, ShoppingBag } from "lucide-react";
-import { products as initialProducts, formatNaira, Product } from "@/data/products";
+import { formatNaira, Product } from "@/data/products"; // Removed initialProducts
+import { fetchProducts } from "@/api/client"; // Added API helper
 import Navbar from "@/components/Navbar";
 
 const AdminDashboard = () => {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const data = await fetchProducts();
+        setProducts(data);
+      } catch (error) {
+        console.error("Error loading products for admin:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProducts();
+  }, []);
 
   const stats = [
     { label: "Total Orders", value: "156", icon: <ShoppingBag className="h-5 w-5" />, color: "bg-primary/10 text-primary" },
@@ -15,7 +31,7 @@ const AdminDashboard = () => {
     { label: "Products", value: String(products.length), icon: <Package className="h-5 w-5" />, color: "bg-secondary text-secondary-foreground" },
   ];
 
-  const deleteProduct = (id: string) => setProducts((prev) => prev.filter((p) => p.id !== id));
+  const deleteProduct = (id: number) => setProducts((prev) => prev.filter((p) => p.id !== id));
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,46 +69,53 @@ const AdminDashboard = () => {
             </button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-secondary/50">
-                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Product</th>
-                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground hidden md:table-cell">Category</th>
-                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Price</th>
-                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground hidden sm:table-cell">Stock</th>
-                  <th className="text-right px-5 py-3 font-semibold text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((p) => (
-                  <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <img src={p.image} alt={p.name} className="w-10 h-10 rounded-lg object-cover" />
-                        <span className="font-medium text-foreground">{p.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-muted-foreground capitalize hidden md:table-cell">{p.category}</td>
-                    <td className="px-5 py-3 font-semibold text-foreground">{formatNaira(p.price)}</td>
-                    <td className="px-5 py-3 hidden sm:table-cell">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${p.inStock ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
-                        {p.inStock ? "In Stock" : "Out"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors">
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => deleteProduct(p.id)} className="p-1.5 hover:bg-destructive/10 rounded-lg text-muted-foreground hover:text-destructive transition-colors">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+            {loading ? (
+              <div className="p-10 text-center animate-pulse">Loading product management...</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-secondary/50">
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Product</th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground hidden md:table-cell">Category</th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Price</th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground hidden sm:table-cell">Stock</th>
+                    <th className="text-right px-5 py-3 font-semibold text-muted-foreground">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {products.map((p) => {
+                    const hasStock = p.stock_quantity > 0;
+                    return (
+                      <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-3">
+                            <img src={`http://localhost:5173${p.image_url}`} alt={p.name} className="w-10 h-10 rounded-lg object-cover" />
+                            <span className="font-medium text-foreground">{p.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-muted-foreground capitalize hidden md:table-cell">{p.category}</td>
+                        <td className="px-5 py-3 font-semibold text-foreground">{formatNaira(p.price)}</td>
+                        <td className="px-5 py-3 hidden sm:table-cell">
+                          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${hasStock ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+                            {hasStock ? `${p.stock_quantity} in stock` : "Out of Stock"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => deleteProduct(p.id)} className="p-1.5 hover:bg-destructive/10 rounded-lg text-muted-foreground hover:text-destructive transition-colors">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>

@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, SlidersHorizontal } from "lucide-react";
-import { products, categories } from "@/data/products";
+import { Search } from "lucide-react";
+import { fetchProducts } from "@/api/client"; // Import the helper we created
+import { categories } from "@/data/products"; // Keep categories static for now
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -12,19 +13,55 @@ const Shop = () => {
   const initialQ = params.get("q") || "";
   const initialCat = params.get("category") || "";
 
+  // --- New State for API Data ---
+  const [dbProducts, setDbProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  // ------------------------------
+
   const [search, setSearch] = useState(initialQ);
   const [selectedCategory, setSelectedCategory] = useState(initialCat);
   const [sortBy, setSortBy] = useState("default");
 
+  // Fetch products from the backend on mount
+  useEffect(() => {
+    const getProducts = async () => {
+      try {
+        const data = await fetchProducts();
+        setDbProducts(data);
+      } catch (error) {
+        console.error("Error loading products from database:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    getProducts();
+  }, []);
+
   const filtered = useMemo(() => {
-    let list = [...products];
-    if (search) list = list.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
-    if (selectedCategory) list = list.filter((p) => p.category === selectedCategory);
-    if (sortBy === "price-low") list.sort((a, b) => a.price - b.price);
-    else if (sortBy === "price-high") list.sort((a, b) => b.price - a.price);
-    else if (sortBy === "popular") list.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
+    // We now filter the data coming from the database (dbProducts)
+    let list = [...dbProducts];
+    
+    if (search) {
+      list = list.filter((p) => 
+        p.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    
+    if (selectedCategory) {
+      list = list.filter((p) => p.category === selectedCategory);
+    }
+
+    // Sort logic (handling string-to-number conversion for price)
+    if (sortBy === "price-low") {
+      list.sort((a, b) => Number(a.price) - Number(b.price));
+    } else if (sortBy === "price-high") {
+      list.sort((a, b) => Number(b.price) - Number(a.price));
+    } else if (sortBy === "popular") {
+      list.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
+    }
+    
     return list;
-  }, [search, selectedCategory, sortBy]);
+  }, [search, selectedCategory, sortBy, dbProducts]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,8 +132,12 @@ const Shop = () => {
           ))}
         </div>
 
-        {/* Products */}
-        {filtered.length === 0 ? (
+        {/* Products Logic */}
+        {loading ? (
+          <div className="text-center py-20">
+            <p className="text-lg animate-pulse">Fetching fresh groceries...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
             <p className="text-lg">No products found</p>
             <button onClick={() => { setSearch(""); setSelectedCategory(""); }} className="text-primary font-semibold mt-2">
