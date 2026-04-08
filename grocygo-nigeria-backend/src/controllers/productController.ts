@@ -1,12 +1,34 @@
 import { Request, Response } from 'express';
 import { query } from '../config/db';
 
-// Get all products (for the Shop page)
+// Get products with Search and Category filtering
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const result = await query('SELECT * FROM products ORDER BY created_at DESC');
+    const { q, category } = req.query;
+    
+    // Base query
+    let queryText = 'SELECT * FROM products WHERE 1=1';
+    const params: any[] = [];
+
+    // 1. Filter by Category
+    if (category && category !== 'all' && category !== '') {
+      params.push(category);
+      queryText += ` AND category = $${params.length}`;
+    }
+
+    // 2. Filter by Search Query
+    if (q) {
+      params.push(`%${q}%`);
+      queryText += ` AND (name ILIKE $${params.length} OR description ILIKE $${params.length})`;
+    }
+
+    // 3. Add Ordering
+    queryText += ' ORDER BY created_at DESC';
+
+    const result = await query(queryText, params);
     res.json(result.rows);
   } catch (error) {
+    console.error('Search/Filter Error:', error);
     res.status(500).json({ message: 'Error fetching products' });
   }
 };

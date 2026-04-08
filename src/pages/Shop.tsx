@@ -2,8 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
-import { fetchProducts } from "@/api/client"; // Import the helper we created
-import { categories } from "@/data/products"; // Keep categories static for now
+import { fetchProducts } from "@/api/client"; 
+import { categories } from "@/data/products"; 
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,45 +13,39 @@ const Shop = () => {
   const initialQ = params.get("q") || "";
   const initialCat = params.get("category") || "";
 
-  // --- New State for API Data ---
   const [dbProducts, setDbProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  // ------------------------------
-
   const [search, setSearch] = useState(initialQ);
   const [selectedCategory, setSelectedCategory] = useState(initialCat);
   const [sortBy, setSortBy] = useState("default");
 
-  // Fetch products from the backend on mount
+  // Fetch products whenever search or category changes
   useEffect(() => {
     const getProducts = async () => {
+      setLoading(true); // Show loader while fetching
       try {
-        const data = await fetchProducts();
+        // Now passing the filters directly to the API helper
+        const data = await fetchProducts(selectedCategory, search);
         setDbProducts(data);
       } catch (error) {
-        console.error("Error loading products from database:", error);
+        console.error("Error loading products:", error);
       } finally {
         setLoading(false);
       }
     };
-    getProducts();
-  }, []);
 
-  const filtered = useMemo(() => {
-    // We now filter the data coming from the database (dbProducts)
+    // We use a small delay (debounce) for search so it doesn't hit the DB on every single keystroke
+    const timer = setTimeout(() => {
+      getProducts();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search, selectedCategory]); // Triggers API call on change
+
+  const sortedProducts = useMemo(() => {
     let list = [...dbProducts];
     
-    if (search) {
-      list = list.filter((p) => 
-        p.name.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-    
-    if (selectedCategory) {
-      list = list.filter((p) => p.category === selectedCategory);
-    }
-
-    // Sort logic (handling string-to-number conversion for price)
+    // We only handle Sorting here, because Filtering is now done by Postgres
     if (sortBy === "price-low") {
       list.sort((a, b) => Number(a.price) - Number(b.price));
     } else if (sortBy === "price-high") {
@@ -61,7 +55,7 @@ const Shop = () => {
     }
     
     return list;
-  }, [search, selectedCategory, sortBy, dbProducts]);
+  }, [sortBy, dbProducts]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,7 +69,7 @@ const Shop = () => {
           Shop Groceries
         </motion.h1>
 
-        {/* Filters */}
+        {/* Search and Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           <div className="flex-1 flex items-center bg-card border border-border rounded-lg px-4 py-2">
             <Search className="h-4 w-4 text-muted-foreground mr-2" />
@@ -87,20 +81,22 @@ const Shop = () => {
               className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground"
             />
           </div>
+          
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-card border border-border rounded-lg px-4 py-2 text-sm text-foreground outline-none"
+            className="bg-card border border-border rounded-lg px-4 py-2 text-sm text-foreground outline-none cursor-pointer"
           >
             <option value="">All Categories</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-card border border-border rounded-lg px-4 py-2 text-sm text-foreground outline-none"
+            className="bg-card border border-border rounded-lg px-4 py-2 text-sm text-foreground outline-none cursor-pointer"
           >
             <option value="default">Sort by</option>
             <option value="price-low">Price: Low to High</option>
@@ -132,21 +128,23 @@ const Shop = () => {
           ))}
         </div>
 
-        {/* Products Logic */}
+        {/* Products Grid */}
         {loading ? (
-          <div className="text-center py-20">
-            <p className="text-lg animate-pulse">Fetching fresh groceries...</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 opacity-50">
+             {[...Array(8)].map((_, i) => (
+               <div key={i} className="aspect-[4/5] bg-secondary animate-pulse rounded-xl" />
+             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : sortedProducts.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
-            <p className="text-lg">No products found</p>
-            <button onClick={() => { setSearch(""); setSelectedCategory(""); }} className="text-primary font-semibold mt-2">
-              Clear filters
+            <p className="text-lg">No products found for "{search || selectedCategory}"</p>
+            <button onClick={() => { setSearch(""); setSelectedCategory(""); }} className="text-primary font-semibold mt-2 hover:underline">
+              Clear all filters
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filtered.map((p, i) => (
+            {sortedProducts.map((p, i) => (
               <ProductCard key={p.id} product={p} index={i} />
             ))}
           </div>
