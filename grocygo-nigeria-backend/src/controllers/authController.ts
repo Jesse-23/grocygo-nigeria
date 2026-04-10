@@ -19,17 +19,28 @@ export const register = async (req: Request, res: Response) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 3. Save user to database
+    // 3. Save user to database (Note: password_hash matches your code)
     const newUser = await query(
       'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, role',
       [name, email, hashedPassword]
     );
 
+    const user = newUser.rows[0];
+
+    // 4. Create JWT Token (Adding token so they are logged in immediately)
+    const token = jwt.sign(
+        { id: user.id, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '1d' }
+    );
+
     res.status(201).json({
       message: 'User registered successfully',
-      user: newUser.rows[0]
+      token,
+      user
     });
   } catch (error) {
+    console.error("Reg error:", error);
     res.status(500).json({ message: 'Server error during registration' });
   }
 };
@@ -64,6 +75,7 @@ export const login = async (req: Request, res: Response) => {
       user: { id: user.id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
+    console.error("Login error:", error);
     res.status(500).json({ message: 'Server error during login' });
   }
 };

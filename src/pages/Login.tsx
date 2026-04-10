@@ -1,20 +1,45 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
 import { motion } from "framer-motion";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react"; // Added Loader
 import Navbar from "@/components/Navbar";
 import GoogleOAuthButton from "@/components/GoogleOAuthButton";
 import ForgottenPassword from "@/components/ForgottenPassword";
+import { loginUser } from "@/api/client"; // Added API
+import { useAuth } from "@/context/AuthContext"; // Added Auth
+import { toast } from "sonner"; // Added Toast
 
 const Login = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  
   const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false); // Added loading state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isForgottenPasswordOpen, setIsForgottenPasswordOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // placeholder
+    setLoading(true);
+
+    try {
+      // 1. Call Backend Login API
+      const response = await loginUser({ email, password });
+      
+      // 2. Save to Global Auth State (Context + LocalStorage)
+      login(response.user, response.token);
+      
+      // 3. Success Feedback
+      toast.success(`Welcome back, ${response.user.name}!`);
+      
+      // 4. Redirect to Home or Dashboard
+      navigate("/");
+    } catch (error: any) {
+      toast.error(error.message || "Invalid email or password");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -27,7 +52,13 @@ const Login = () => {
           <p className="text-muted-foreground text-sm mt-1">Login to your GrocyGo account</p>
         </motion.div>
 
-        <motion.form initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} onSubmit={handleSubmit} className="space-y-4">
+        <motion.form 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.1 }} 
+          onSubmit={handleSubmit} 
+          className="space-y-4"
+        >
           <input
             type="email"
             required
@@ -35,6 +66,7 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full bg-card border border-border rounded-lg px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            disabled={loading}
           />
           <div className="relative">
             <input
@@ -44,6 +76,7 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-card border border-border rounded-lg px-4 py-3 pr-10 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              disabled={loading}
             />
             <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
               {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -58,15 +91,25 @@ const Login = () => {
               Forgot password?
             </button>
           </div>
+          
           <motion.button
             whileTap={{ scale: 0.97 }}
             type="submit"
-            className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-full hover:shadow-button transition-all"
+            disabled={loading}
+            className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-full hover:shadow-button transition-all flex items-center justify-center gap-2"
           >
-            Log In
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Logging in...
+              </>
+            ) : (
+              "Log In"
+            )}
           </motion.button>
         </motion.form>
 
+        {/* ... divider and google button same as before ... */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border"></div>
@@ -84,7 +127,6 @@ const Login = () => {
           <GoogleOAuthButton
             onSuccess={(response) => {
               console.log("Login successful:", response);
-              // TODO: Handle successful login - redirect to dashboard
             }}
             onError={() => {
               console.error("Google login failed");

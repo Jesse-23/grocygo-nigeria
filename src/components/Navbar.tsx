@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, User, Menu, X, Search } from "lucide-react";
+import { ShoppingCart, User, Menu, X, LogOut } from "lucide-react"; // Added LogOut
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext"; // Added useAuth
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = () => {
   const { totalItems } = useCart();
+  const { user, logout, isAuthenticated } = useAuth(); // Get auth state
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const links = [
@@ -49,9 +51,30 @@ const Navbar = () => {
               </motion.span>
             )}
           </Link>
-          <Link to="/login" className="p-2 hover:bg-secondary rounded-full transition-colors hidden md:flex">
-            <User className="h-5 w-5 text-foreground" />
-          </Link>
+
+          {/* Logic for Authenticated vs Guest */}
+          {isAuthenticated ? (
+            <div className="hidden md:flex items-center gap-4">
+              <Link to="/dashboard" className="flex items-center gap-2 px-3 py-1.5 hover:bg-secondary rounded-full transition-all border border-transparent hover:border-border">
+                <div className="h-6 w-6 bg-primary/10 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-primary" />
+                </div>
+                <span className="text-sm font-semibold text-foreground">{user?.name.split(' ')[0]}</span>
+              </Link>
+              <button 
+                onClick={logout} 
+                className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
+                title="Logout"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
+            </div>
+          ) : (
+            <Link to="/login" className="p-2 hover:bg-secondary rounded-full transition-colors hidden md:flex">
+              <User className="h-5 w-5 text-foreground" />
+            </Link>
+          )}
+
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="p-2 md:hidden hover:bg-secondary rounded-full transition-colors"
@@ -81,13 +104,24 @@ const Navbar = () => {
                   {l.label}
                 </Link>
               ))}
-              <Link
-                to="/login"
-                onClick={() => setMobileOpen(false)}
-                className="text-sm font-medium text-muted-foreground hover:text-primary py-2"
-              >
-                Login / Signup
-              </Link>
+              <div className="pt-2 border-t border-border">
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => { logout(); setMobileOpen(false); }}
+                    className="text-sm font-medium text-red-500 py-2 w-full text-left flex items-center gap-2"
+                  >
+                    <LogOut className="h-4 w-4" /> Logout ({user?.name})
+                  </button>
+                ) : (
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-sm font-medium text-muted-foreground hover:text-primary py-2 flex items-center gap-2"
+                  >
+                    <User className="h-4 w-4" /> Login / Signup
+                  </Link>
+                )}
+              </div>
             </div>
           </motion.div>
         )}

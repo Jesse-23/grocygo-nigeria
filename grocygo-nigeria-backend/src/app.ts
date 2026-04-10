@@ -41,6 +41,7 @@ app.get('/test-db', async (req: Request, res: Response) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/auth', authRoutes);
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 5000;
