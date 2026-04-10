@@ -1,3 +1,18 @@
+# Dependencies
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr
+.dev/
+
+# Secrets (The most important part!)
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
 # Logs
 logs
 *.log
@@ -6,11 +21,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +32,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# System files
+Thumbs.db

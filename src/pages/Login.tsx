@@ -1,20 +1,20 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Loader2 } from "lucide-react"; // Added Loader
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import GoogleOAuthButton from "@/components/GoogleOAuthButton";
 import ForgottenPassword from "@/components/ForgottenPassword";
-import { loginUser } from "@/api/client"; // Added API
-import { useAuth } from "@/context/AuthContext"; // Added Auth
-import { toast } from "sonner"; // Added Toast
+import { loginUser } from "@/api/client"; 
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   
   const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false); // Added loading state
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isForgottenPasswordOpen, setIsForgottenPasswordOpen] = useState(false);
@@ -22,23 +22,35 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      // 1. Call Backend Login API
       const response = await loginUser({ email, password });
-      
-      // 2. Save to Global Auth State (Context + LocalStorage)
       login(response.user, response.token);
-      
-      // 3. Success Feedback
       toast.success(`Welcome back, ${response.user.name}!`);
-      
-      // 4. Redirect to Home or Dashboard
       navigate("/");
     } catch (error: any) {
       toast.error(error.message || "Invalid email or password");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tokenId: credentialResponse.credential }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        login(data.user, data.token);
+        toast.success(`Welcome back, ${data.user.name}!`);
+        navigate("/");
+      } else {
+        toast.error(data.message || "Google login failed");
+      }
+    } catch (error) {
+      toast.error("Could not connect to server");
     }
   };
 
@@ -60,20 +72,14 @@ const Login = () => {
           className="space-y-4"
         >
           <input
-            type="email"
-            required
-            placeholder="Email address"
-            value={email}
+            type="email" required placeholder="Email address" value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full bg-card border border-border rounded-lg px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
             disabled={loading}
           />
           <div className="relative">
             <input
-              type={showPw ? "text" : "password"}
-              required
-              placeholder="Password"
-              value={password}
+              type={showPw ? "text" : "password"} required placeholder="Password" value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-card border border-border rounded-lg px-4 py-3 pr-10 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
               disabled={loading}
@@ -83,20 +89,15 @@ const Login = () => {
             </button>
           </div>
           <div className="text-right">
-            <button
-              type="button"
-              onClick={() => setIsForgottenPasswordOpen(true)}
-              className="text-sm text-primary hover:underline font-medium"
-            >
+            <button type="button" onClick={() => setIsForgottenPasswordOpen(true)} className="text-sm text-primary hover:underline font-medium">
               Forgot password?
             </button>
           </div>
-          
           <motion.button
             whileTap={{ scale: 0.97 }}
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-full hover:shadow-button transition-all flex items-center justify-center gap-2"
+            className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-full flex items-center justify-center gap-2 transition-all"
           >
             {loading ? (
               <>
@@ -109,7 +110,6 @@ const Login = () => {
           </motion.button>
         </motion.form>
 
-        {/* ... divider and google button same as before ... */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border"></div>
@@ -119,30 +119,17 @@ const Login = () => {
           </div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <GoogleOAuthButton
-            onSuccess={(response) => {
-              console.log("Login successful:", response);
-            }}
-            onError={() => {
-              console.error("Google login failed");
-            }}
-          />
-        </motion.div>
+        {/* buttonText defaults to signin_with internally */}
+        <GoogleOAuthButton 
+          onSuccess={handleGoogleSuccess} 
+          onError={() => toast.error("Google login failed")} 
+        />
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          Don't have an account?{" "}
-          <Link to="/signup" className="text-primary font-semibold hover:underline">Sign Up</Link>
+          Don't have an account? <Link to="/signup" className="text-primary font-semibold hover:underline">Sign Up</Link>
         </p>
 
-        <ForgottenPassword
-          isOpen={isForgottenPasswordOpen}
-          onClose={() => setIsForgottenPasswordOpen(false)}
-        />
+        <ForgottenPassword isOpen={isForgottenPasswordOpen} onClose={() => setIsForgottenPasswordOpen(false)} />
       </div>
     </div>
   );

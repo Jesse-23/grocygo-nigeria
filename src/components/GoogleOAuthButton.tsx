@@ -4,13 +4,19 @@ import { handleGoogleSuccess, handleGoogleError } from "@/lib/oauth";
 interface GoogleOAuthButtonProps {
   onSuccess?: (response: any) => void;
   onError?: () => void;
+  buttonText?: "signin_with" | "signup_with" | "continue_with"; // Added prop
 }
 
-export const GoogleOAuthButton = ({ onSuccess, onError }: GoogleOAuthButtonProps) => {
+export const GoogleOAuthButton = ({ 
+  onSuccess, 
+  onError, 
+  buttonText = "signin_with" // Default to sign in
+}: GoogleOAuthButtonProps) => {
+    
   const handleSuccess = (credentialResponse: any) => {
     const response = handleGoogleSuccess(credentialResponse);
     if (onSuccess) {
-      onSuccess(response);
+      onSuccess(credentialResponse); // Passing the raw response for backend verification
     }
   };
 
@@ -21,8 +27,7 @@ export const GoogleOAuthButton = ({ onSuccess, onError }: GoogleOAuthButtonProps
     }
   };
 
-  // You need to set this to your actual Google OAuth Client ID
-  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID";
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "710473140280-qiq5ohidipr6hcj6v52stkkg8pnsc5hg.apps.googleusercontent.com";
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
@@ -30,9 +35,10 @@ export const GoogleOAuthButton = ({ onSuccess, onError }: GoogleOAuthButtonProps
         <GoogleLogin
           onSuccess={handleSuccess}
           onError={handleError}
-          text="signup_with"
+          text={buttonText} // Now dynamic!
           width="100%"
           theme="outline"
+          shape="pill"
         />
       </div>
     </GoogleOAuthProvider>

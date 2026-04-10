@@ -1,41 +1,53 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Loader2 } from "lucide-react"; // Added Loader
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import GoogleOAuthButton from "@/components/GoogleOAuthButton";
-import { registerUser } from "@/api/client"; // Added API call
-import { useAuth } from "@/context/AuthContext"; // Added AuthContext
-import { toast } from "sonner"; // Using your existing sonner toast
+import { registerUser } from "@/api/client"; 
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 const Signup = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   
   const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false); // New loading state
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      // 1. Send data to Backend
       const response = await registerUser(form);
-      
-      // 2. Update Global Auth State
       login(response.user, response.token);
-      
-      // 3. Success Notification
       toast.success("Account created! Welcome to GrocyGo 🛒");
-      
-      // 4. Redirect to Home
       navigate("/");
     } catch (error: any) {
       toast.error(error.message || "Something went wrong during signup");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tokenId: credentialResponse.credential }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        login(data.user, data.token);
+        toast.success(`Welcome, ${data.user.name}!`);
+        navigate("/");
+      } else {
+        toast.error(data.message || "Google login failed");
+      }
+    } catch (error) {
+      toast.error("Could not connect to server");
     }
   };
 
@@ -57,29 +69,20 @@ const Signup = () => {
           className="space-y-4"
         >
           <input
-            type="text"
-            required
-            placeholder="Full Name"
-            value={form.name}
+            type="text" required placeholder="Full Name" value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             className="w-full bg-card border border-border rounded-lg px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
             disabled={loading}
           />
           <input
-            type="email"
-            required
-            placeholder="Email address"
-            value={form.email}
+            type="email" required placeholder="Email address" value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             className="w-full bg-card border border-border rounded-lg px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
             disabled={loading}
           />
           <div className="relative">
             <input
-              type={showPw ? "text" : "password"}
-              required
-              placeholder="Password"
-              value={form.password}
+              type={showPw ? "text" : "password"} required placeholder="Password" value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               className="w-full bg-card border border-border rounded-lg px-4 py-3 pr-10 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
               disabled={loading}
@@ -92,8 +95,8 @@ const Signup = () => {
           <motion.button 
             whileTap={{ scale: 0.97 }} 
             type="submit" 
-            disabled={loading}
-            className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-full hover:shadow-button transition-all flex items-center justify-center gap-2"
+            disabled={loading} 
+            className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-full flex items-center justify-center gap-2 transition-all"
           >
             {loading ? (
               <>
@@ -115,24 +118,14 @@ const Signup = () => {
           </div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <GoogleOAuthButton
-            onSuccess={(response) => {
-              console.log("Signup successful:", response);
-            }}
-            onError={() => {
-              console.error("Google signup failed");
-            }}
-          />
-        </motion.div>
+        <GoogleOAuthButton 
+          buttonText="signup_with" 
+          onSuccess={handleGoogleSuccess} 
+          onError={() => toast.error("Google signup failed")} 
+        />
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          Already have an account?{" "}
-          <Link to="/login" className="text-primary font-semibold hover:underline">Log In</Link>
+          Already have an account? <Link to="/login" className="text-primary font-semibold hover:underline">Log In</Link>
         </p>
       </div>
     </div>
