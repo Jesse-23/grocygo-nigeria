@@ -1,9 +1,9 @@
-import { useEffect } from "react"; // Added useEffect
-import { useNavigate } from "react-router-dom"; // Added useNavigate
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, Clock, CheckCircle, Truck } from "lucide-react";
 import { formatNaira } from "@/data/products";
-import { useAuth } from "@/context/AuthContext"; // Added useAuth
+import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 

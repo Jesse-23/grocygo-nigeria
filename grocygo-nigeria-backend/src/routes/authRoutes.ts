@@ -9,6 +9,7 @@ router.post('/register', register);
 // Endpoint: POST /api/auth/login
 router.post('/login', login);
 
+// Endpoint: POST /api/auth/google
 router.post('/google', googleAuth);
 
 export default router;

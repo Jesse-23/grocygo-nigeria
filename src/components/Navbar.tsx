@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, User, Menu, X, LogOut } from "lucide-react"; // Added LogOut
+import { ShoppingCart, User, Menu, X, LogOut } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/context/AuthContext"; // Added useAuth
+import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 

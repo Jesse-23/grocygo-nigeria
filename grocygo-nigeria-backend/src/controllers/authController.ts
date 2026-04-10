@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { OAuth2Client } from 'google-auth-library'; // Add this
+import { OAuth2Client } from 'google-auth-library';
 import { query } from '../config/db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // Add this
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const register = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
@@ -58,7 +58,7 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-// NEW: Google Authentication Logic
+// Google Authentication Logic
 export const googleAuth = async (req: Request, res: Response) => {
   const { tokenId } = req.body;
 
