@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { register, login, googleAuth } from '../controllers/authController';
+import { register, login, googleAuth, getProfile } from '../controllers/authController';
+import { verifyToken } from '../middleware/authMiddleware';
 
 const router = Router();
 
@@ -11,5 +12,8 @@ router.post('/login', login);
 
 // Endpoint: POST /api/auth/google
 router.post('/google', googleAuth);
+
+// Protected route: req.user is set inside verifyToken
+router.get('/me', verifyToken, getProfile);
 
 export default router;

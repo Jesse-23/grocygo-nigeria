@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, User, Menu, X, LogOut } from "lucide-react";
+import { ShoppingCart, User, Menu, X, LogOut, UserCircle } from "lucide-react"; // Added UserCircle
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
@@ -7,14 +7,15 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = () => {
   const { totalItems } = useCart();
-  const { user, logout, isAuthenticated } = useAuth(); // Get auth state
+  const { user, logout, isAuthenticated } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const links = [
     { to: "/", label: "Home" },
     { to: "/shop", label: "Shop" },
     { to: "/cart", label: "Cart" },
-    { to: "/dashboard", label: "My Orders" },
+    // Only show "My Orders" if logged in, otherwise it's redundant
+    ...(isAuthenticated ? [{ to: "/dashboard", label: "My Orders" }] : []),
   ];
 
   return (
@@ -55,11 +56,14 @@ const Navbar = () => {
           {/* Logic for Authenticated vs Guest */}
           {isAuthenticated ? (
             <div className="hidden md:flex items-center gap-4">
-              <Link to="/dashboard" className="flex items-center gap-2 px-3 py-1.5 hover:bg-secondary rounded-full transition-all border border-transparent hover:border-border">
+              {/* Linked Name to Profile */}
+              <Link to="/profile" className="flex items-center gap-2 px-3 py-1.5 hover:bg-secondary rounded-full transition-all border border-transparent hover:border-border">
                 <div className="h-6 w-6 bg-primary/10 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-primary" />
                 </div>
-                <span className="text-sm font-semibold text-foreground">{user?.name.split(' ')[0]}</span>
+                <span className="text-sm font-semibold text-foreground">
+                  {user?.name ? user.name.split(' ')[0] : 'Account'}
+                </span>
               </Link>
               <button 
                 onClick={logout} 
@@ -104,14 +108,24 @@ const Navbar = () => {
                   {l.label}
                 </Link>
               ))}
+              
               <div className="pt-2 border-t border-border">
                 {isAuthenticated ? (
-                  <button
-                    onClick={() => { logout(); setMobileOpen(false); }}
-                    className="text-sm font-medium text-red-500 py-2 w-full text-left flex items-center gap-2"
-                  >
-                    <LogOut className="h-4 w-4" /> Logout ({user?.name})
-                  </button>
+                  <>
+                    <Link
+                      to="/profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="text-sm font-medium text-muted-foreground hover:text-primary py-2 flex items-center gap-2"
+                    >
+                      <UserCircle className="h-4 w-4" /> My Profile
+                    </Link>
+                    <button
+                      onClick={() => { logout(); setMobileOpen(false); }}
+                      className="text-sm font-medium text-red-500 py-2 w-full text-left flex items-center gap-2"
+                    >
+                      <LogOut className="h-4 w-4" /> Logout ({user?.name.split(' ')[0]})
+                    </button>
+                  </>
                 ) : (
                   <Link
                     to="/login"

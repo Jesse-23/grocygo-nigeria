@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
+// Updated User interface to include created_at
 interface User {
   id: number;
   name: string;
   email: string;
   role: string;
+  created_at?: string; // Added this to fix the Profile.tsx error
 }
 
 interface AuthContextType {
@@ -24,7 +26,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const savedUser = localStorage.getItem("grocygo_user");
     if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error("Failed to parse saved user", e);
+        localStorage.removeItem("grocygo_user");
+      }
     }
   }, [token]);
 
