@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-// Updated User interface to include created_at
 interface User {
   id: number;
   name: string;
   email: string;
   role: string;
-  created_at?: string; // Added this to fix the Profile.tsx error
+  created_at?: string;
+  phone?: string;
 }
 
 interface AuthContextType {
@@ -14,6 +14,7 @@ interface AuthContextType {
   token: string | null;
   login: (userData: User, token: string) => void;
   logout: () => void;
+  updateUser: (updatedData: Partial<User>) => void; // Added this
   isAuthenticated: boolean;
 }
 
@@ -49,8 +50,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
   };
 
+  // NEW: Function to update user data in state and localStorage
+  const updateUser = (updatedData: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const newUserData = { ...prev, ...updatedData };
+      localStorage.setItem("grocygo_user", JSON.stringify(newUserData));
+      return newUserData;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

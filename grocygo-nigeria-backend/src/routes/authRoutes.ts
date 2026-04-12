@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, googleAuth, getProfile } from '../controllers/authController';
+import { register, login, googleAuth, getProfile, updateProfile } from '../controllers/authController';
 import { verifyToken } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -15,5 +15,7 @@ router.post('/google', googleAuth);
 
 // Protected route: req.user is set inside verifyToken
 router.get('/me', verifyToken, getProfile);
+
+router.put('/update-profile', verifyToken, updateProfile);
 
 export default router;

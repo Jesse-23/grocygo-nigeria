@@ -51,14 +51,22 @@ export const login = async (req: Request, res: Response) => {
 
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
 
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    res.json({ 
+      token, 
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role,
+        phone: user.phone // Added phone to login response
+      } 
+    });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: 'Server error during login' });
   }
 };
 
-// Google Authentication Logic
 export const googleAuth = async (req: Request, res: Response) => {
   const { tokenId } = req.body;
 
@@ -86,7 +94,16 @@ export const googleAuth = async (req: Request, res: Response) => {
 
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
 
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    res.json({ 
+      token, 
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role,
+        phone: user.phone 
+      } 
+    });
   } catch (error) {
     console.error("Google Auth error:", error);
     res.status(500).json({ message: 'Google authentication failed' });
@@ -95,15 +112,13 @@ export const googleAuth = async (req: Request, res: Response) => {
 
 /**
  * GET /api/auth/me
- * Gets current user profile from token
  */
 export const getProfile = async (req: any, res: Response) => {
   try {
-    // req.user is populated by the verifyToken middleware
     const userId = req.user.id;
 
     const result = await query(
-      'SELECT id, name, email, role, created_at FROM users WHERE id = $1',
+      'SELECT id, name, email, role, phone, created_at FROM users WHERE id = $1',
       [userId]
     );
 
@@ -115,5 +130,33 @@ export const getProfile = async (req: any, res: Response) => {
   } catch (error) {
     console.error("GetProfile error:", error);
     res.status(500).json({ message: 'Error fetching profile' });
+  }
+};
+
+/**
+ * PUT /api/auth/update-profile
+ * Updates user name and phone number
+ */
+export const updateProfile = async (req: any, res: Response) => {
+  const { name, phone } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const result = await query(
+      'UPDATE users SET name = $1, phone = $2 WHERE id = $3 RETURNING id, name, email, role, phone',
+      [name, phone, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ 
+      message: 'Profile updated successfully', 
+      user: result.rows[0] 
+    });
+  } catch (error) {
+    console.error("UpdateProfile error:", error);
+    res.status(500).json({ message: 'Server error while updating profile' });
   }
 };

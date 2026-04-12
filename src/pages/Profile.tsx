@@ -20,7 +20,6 @@ const Profile = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 
-  // Mock data for addresses to match your screenshot
   const addresses = [
     {
       id: 1,
@@ -41,7 +40,6 @@ const Profile = () => {
       <Navbar />
 
       <main className="container mx-auto px-4 py-10 max-w-3xl space-y-6">
-        {/* Top Profile Card */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -60,13 +58,12 @@ const Profile = () => {
           </div>
           <button
             onClick={() => setIsEditModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-slate-200 text-[#22C55E] font-semibold hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-slate-200 text-[#22C55E] font-semibold hover:bg-slate-50 transition-all"
           >
             <Edit3 className="h-4 w-4" /> Edit Profile
           </button>
         </motion.div>
 
-        {/* Personal Information Section */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900 font-serif">
@@ -94,12 +91,11 @@ const Profile = () => {
             <InfoCard
               icon={<Phone className="text-[#22C55E]" />}
               label="Phone"
-              value="+234 801 234 5678"
+              value={user?.phone || "+234 801 234 5678"}
             />
           </div>
         </div>
 
-        {/* Delivery Addresses Section */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900 font-serif">
@@ -140,13 +136,10 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Account Settings */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-2">
           <h2 className="text-xl font-bold text-slate-900 font-serif mb-6">
             Account Settings
           </h2>
-
-          {/* Change Password Button */}
           <button className="w-full flex items-center justify-between p-4 text-slate-600 hover:bg-slate-50 rounded-2xl transition-colors group">
             <div className="flex items-center gap-4">
               <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-white transition-colors">
@@ -158,8 +151,6 @@ const Profile = () => {
             </div>
             <ChevronRight className="h-5 w-5 text-slate-300" />
           </button>
-
-          {/* Log Out Button */}
           <button
             onClick={logout}
             className="w-full flex items-center justify-between p-4 text-red-500 hover:bg-red-50/50 rounded-2xl transition-colors group"
@@ -175,7 +166,6 @@ const Profile = () => {
         </div>
       </main>
 
-      {/* Modals */}
       <AnimatePresence>
         {isEditModalOpen && (
           <Modal title="Edit Profile" onClose={() => setIsEditModalOpen(false)}>
@@ -198,7 +188,6 @@ const Profile = () => {
   );
 };
 
-// Reusable Components
 const InfoCard = ({ icon, label, value }: any) => (
   <div className="flex items-center gap-4 p-4 bg-[#F8FAFC] rounded-2xl border border-slate-50">
     <div className="p-3 bg-white rounded-xl shadow-sm">{icon}</div>
@@ -226,48 +215,106 @@ const Modal = ({ title, onClose, children }: any) => (
         <X className="h-5 w-5 text-slate-400" />
       </button>
       <h2 className="text-2xl font-bold text-slate-900 mb-2">{title}</h2>
-      <p className="text-slate-500 text-sm mb-6">Update your details below</p>
       {children}
     </motion.div>
   </div>
 );
 
-const EditProfileForm = ({ user, onClose }: any) => (
-  <form className="space-y-4">
-    <div className="space-y-1">
-      <label className="text-sm font-semibold text-slate-700">Full Name</label>
-      <input
-        type="text"
-        defaultValue={user?.name}
-        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#22C55E] outline-none transition-all"
-      />
-    </div>
-    <div className="space-y-1">
-      <label className="text-sm font-semibold text-slate-700">Email</label>
-      <input
-        type="email"
-        defaultValue={user?.email}
-        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none opacity-60"
-        disabled
-      />
-    </div>
-    <div className="flex gap-3 pt-4">
-      <button
-        type="button"
-        onClick={onClose}
-        className="flex-1 py-4 font-bold text-slate-500 border border-slate-200 rounded-2xl"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        className="flex-1 py-4 font-bold text-white bg-[#22C55E] rounded-2xl"
-      >
-        Save Changes
-      </button>
-    </div>
-  </form>
-);
+const EditProfileForm = ({ user, onClose }: any) => {
+  const { updateUser } = useAuth(); // NEW: Hook to update global state
+  const [name, setName] = useState(user?.name || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem("grocygo_token");
+      const response = await fetch(
+        "http://localhost:5000/api/auth/update-profile",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ name, phone }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        updateUser({ name, phone }); // UPDATE GLOBAL STATE INSTANTLY
+        alert("Profile updated successfully!");
+        onClose();
+      } else {
+        alert(data.message || "Update failed");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSave} className="space-y-4">
+      <div className="space-y-1">
+        <label className="text-sm font-semibold text-slate-700">
+          Full Name
+        </label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#22C55E] outline-none transition-all"
+          required
+        />
+      </div>
+      <div className="space-y-1">
+        <label className="text-sm font-semibold text-slate-700">Email</label>
+        <input
+          type="email"
+          defaultValue={user?.email}
+          className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl outline-none opacity-60 cursor-not-allowed"
+          disabled
+        />
+      </div>
+      <div className="space-y-1">
+        <label className="text-sm font-semibold text-slate-700">
+          Phone Number
+        </label>
+        <input
+          type="text"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#22C55E] outline-none transition-all"
+        />
+      </div>
+      <div className="flex gap-3 pt-4">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={loading}
+          className="flex-1 py-4 font-bold text-slate-500 border border-slate-200 rounded-2xl hover:bg-slate-50 disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex-1 py-4 font-bold text-white bg-[#22C55E] rounded-2xl hover:bg-[#1eb054] disabled:opacity-50"
+        >
+          {loading ? "Saving..." : "Save Changes"}
+        </button>
+      </div>
+    </form>
+  );
+};
 
 const AddAddressForm = ({ onClose }: any) => (
   <form className="space-y-4">
