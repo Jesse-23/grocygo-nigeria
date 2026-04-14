@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { query } from './config/db';
 import authRoutes from './routes/authRoutes';
 import productRoutes from './routes/productRoutes';
+import addressRoutes from './routes/addressRoutes';
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.get('/test-db', async (req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/addresses', addressRoutes);
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 5000;

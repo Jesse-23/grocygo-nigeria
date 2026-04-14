@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
@@ -11,35 +11,56 @@ import {
   X,
   ShieldCheck,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 
+// --- Types ---
+interface Address {
+  id: number;
+  label: string;
+  street_address: string;
+  city: string;
+  state: string;
+  is_default: boolean;
+}
+
+// --- Main Profile Component ---
 const Profile = () => {
   const { user, logout } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
 
-  const addresses = [
-    {
-      id: 1,
-      label: "Home",
-      isDefault: true,
-      address: "12 Allen Avenue, Ikeja, Lagos",
-    },
-    {
-      id: 2,
-      label: "Office",
-      isDefault: false,
-      address: "5 Broad Street, Lagos Island, Lagos",
-    },
-  ];
+  const fetchAddresses = async () => {
+    try {
+      const token = localStorage.getItem("grocygo_token");
+      const response = await fetch("http://localhost:5000/api/addresses", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setAddresses(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch addresses:", error);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <Navbar />
 
       <main className="container mx-auto px-4 py-10 max-w-3xl space-y-6">
+        {/* Top Profile Card */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -64,6 +85,7 @@ const Profile = () => {
           </button>
         </motion.div>
 
+        {/* Personal Information */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900 font-serif">
@@ -76,7 +98,6 @@ const Profile = () => {
               <Edit3 className="h-4 w-4" /> Edit
             </button>
           </div>
-
           <div className="space-y-4">
             <InfoCard
               icon={<User className="text-[#22C55E]" />}
@@ -91,11 +112,12 @@ const Profile = () => {
             <InfoCard
               icon={<Phone className="text-[#22C55E]" />}
               label="Phone"
-              value={user?.phone || "+234 801 234 5678"}
+              value={user?.phone || "+234 ..."}
             />
           </div>
         </div>
 
+        {/* Delivery Addresses Section */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900 font-serif">
@@ -110,32 +132,45 @@ const Profile = () => {
           </div>
 
           <div className="space-y-4">
-            {addresses.map((addr) => (
-              <div
-                key={addr.id}
-                className="flex items-start gap-4 p-5 bg-[#F8FAFC] rounded-2xl border border-slate-50"
-              >
-                <div className="p-3 bg-white rounded-xl shadow-sm">
-                  <MapPin className="h-5 w-5 text-[#22C55E]" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">
-                      {addr.label}
-                    </span>
-                    {addr.isDefault && (
-                      <span className="text-[10px] bg-[#DCFCE7] text-[#166534] px-2 py-0.5 rounded-full font-bold uppercase">
-                        Default
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-slate-500 text-sm">{addr.address}</p>
-                </div>
+            {loadingAddresses ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="animate-spin text-[#22C55E]" />
               </div>
-            ))}
+            ) : addresses.length > 0 ? (
+              addresses.map((addr) => (
+                <div
+                  key={addr.id}
+                  className="flex items-start gap-4 p-5 bg-[#F8FAFC] rounded-2xl border border-slate-50"
+                >
+                  <div className="p-3 bg-white rounded-xl shadow-sm">
+                    <MapPin className="h-5 w-5 text-[#22C55E]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900">
+                        {addr.label}
+                      </span>
+                      {addr.is_default && (
+                        <span className="text-[10px] bg-[#DCFCE7] text-[#166534] px-2 py-0.5 rounded-full font-bold uppercase">
+                          Default
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-slate-500 text-sm">
+                      {addr.street_address}, {addr.city}, {addr.state}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-slate-400 py-4">
+                No addresses saved yet.
+              </p>
+            )}
           </div>
         </div>
 
+        {/* Account Settings */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-2">
           <h2 className="text-xl font-bold text-slate-900 font-serif mb-6">
             Account Settings
@@ -180,13 +215,18 @@ const Profile = () => {
             title="Add New Address"
             onClose={() => setIsAddressModalOpen(false)}
           >
-            <AddAddressForm onClose={() => setIsAddressModalOpen(false)} />
+            <AddAddressForm
+              onClose={() => setIsAddressModalOpen(false)}
+              onSuccess={fetchAddresses}
+            />
           </Modal>
         )}
       </AnimatePresence>
     </div>
   );
 };
+
+// --- Sub-Components ---
 
 const InfoCard = ({ icon, label, value }: any) => (
   <div className="flex items-center gap-4 p-4 bg-[#F8FAFC] rounded-2xl border border-slate-50">
@@ -215,13 +255,14 @@ const Modal = ({ title, onClose, children }: any) => (
         <X className="h-5 w-5 text-slate-400" />
       </button>
       <h2 className="text-2xl font-bold text-slate-900 mb-2">{title}</h2>
+      <p className="text-slate-500 text-sm mb-6">Update your details below</p>
       {children}
     </motion.div>
   </div>
 );
 
 const EditProfileForm = ({ user, onClose }: any) => {
-  const { updateUser } = useAuth(); // NEW: Hook to update global state
+  const { updateUser } = useAuth();
   const [name, setName] = useState(user?.name || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [loading, setLoading] = useState(false);
@@ -229,7 +270,6 @@ const EditProfileForm = ({ user, onClose }: any) => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const token = localStorage.getItem("grocygo_token");
       const response = await fetch(
@@ -243,19 +283,17 @@ const EditProfileForm = ({ user, onClose }: any) => {
           body: JSON.stringify({ name, phone }),
         },
       );
-
-      const data = await response.json();
-
       if (response.ok) {
-        updateUser({ name, phone }); // UPDATE GLOBAL STATE INSTANTLY
+        updateUser({ name, phone });
         alert("Profile updated successfully!");
         onClose();
       } else {
-        alert(data.message || "Update failed");
+        const data = await response.json();
+        alert(data.message || "Failed to update profile");
       }
     } catch (error) {
-      console.error("Update error:", error);
-      alert("Something went wrong");
+      console.error(error);
+      alert("Network error occurred");
     } finally {
       setLoading(false);
     }
@@ -271,43 +309,31 @@ const EditProfileForm = ({ user, onClose }: any) => {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#22C55E] outline-none transition-all"
+          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#22C55E]"
           required
         />
       </div>
       <div className="space-y-1">
-        <label className="text-sm font-semibold text-slate-700">Email</label>
-        <input
-          type="email"
-          defaultValue={user?.email}
-          className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl outline-none opacity-60 cursor-not-allowed"
-          disabled
-        />
-      </div>
-      <div className="space-y-1">
-        <label className="text-sm font-semibold text-slate-700">
-          Phone Number
-        </label>
+        <label className="text-sm font-semibold text-slate-700">Phone</label>
         <input
           type="text"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#22C55E] outline-none transition-all"
+          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#22C55E]"
         />
       </div>
       <div className="flex gap-3 pt-4">
         <button
           type="button"
           onClick={onClose}
-          disabled={loading}
-          className="flex-1 py-4 font-bold text-slate-500 border border-slate-200 rounded-2xl hover:bg-slate-50 disabled:opacity-50"
+          className="flex-1 py-4 font-bold text-slate-500 border border-slate-200 rounded-2xl"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 py-4 font-bold text-white bg-[#22C55E] rounded-2xl hover:bg-[#1eb054] disabled:opacity-50"
+          className="flex-1 py-4 font-bold text-white bg-[#22C55E] rounded-2xl"
         >
           {loading ? "Saving..." : "Save Changes"}
         </button>
@@ -316,42 +342,105 @@ const EditProfileForm = ({ user, onClose }: any) => {
   );
 };
 
-const AddAddressForm = ({ onClose }: any) => (
-  <form className="space-y-4">
-    <input
-      placeholder="Label (e.g. Home, Office)"
-      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none"
-    />
-    <input
-      placeholder="Street Address"
-      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none"
-    />
-    <div className="flex gap-3">
+const AddAddressForm = ({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void;
+  onSuccess: () => void;
+}) => {
+  const [label, setLabel] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("grocygo_token");
+      const response = await fetch("http://localhost:5000/api/addresses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          label,
+          street_address: street,
+          city,
+          state,
+          is_default: false,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        onSuccess();
+        onClose();
+      } else {
+        alert(data.message || "Failed to add address");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Network error: Check your backend connection");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
       <input
-        placeholder="City"
-        className="flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none"
+        required
+        placeholder="Label (e.g. Home, Office)"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#22C55E]"
       />
       <input
-        placeholder="State"
-        className="flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none"
+        required
+        placeholder="Street Address"
+        value={street}
+        onChange={(e) => setStreet(e.target.value)}
+        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#22C55E]"
       />
-    </div>
-    <div className="flex gap-3 pt-4">
-      <button
-        type="button"
-        onClick={onClose}
-        className="flex-1 py-4 font-bold text-slate-500 border border-slate-200 rounded-2xl"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        className="flex-1 py-4 font-bold text-white bg-[#22C55E] rounded-2xl"
-      >
-        Add Address
-      </button>
-    </div>
-  </form>
-);
+      <div className="grid grid-cols-2 gap-3 w-full">
+        <input
+          required
+          placeholder="City"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#22C55E]"
+        />
+        <input
+          required
+          placeholder="State"
+          value={state}
+          onChange={(e) => setState(e.target.value)}
+          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#22C55E]"
+        />
+      </div>
+      <div className="flex gap-3 pt-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 py-4 font-bold text-slate-500 border border-slate-200 rounded-2xl hover:bg-slate-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex-1 py-4 font-bold text-white bg-[#22C55E] rounded-2xl hover:bg-[#1eb054] transition-all disabled:opacity-50"
+        >
+          {loading ? "Adding..." : "Add Address"}
+        </button>
+      </div>
+    </form>
+  );
+};
 
 export default Profile;
