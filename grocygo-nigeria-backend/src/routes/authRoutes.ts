@@ -16,6 +16,7 @@ router.post('/google', googleAuth);
 // Protected route: req.user is set inside verifyToken
 router.get('/me', verifyToken, getProfile);
 
+// Protected route for updating user profile
 router.put('/update-profile', verifyToken, updateProfile);
 
 export default router;

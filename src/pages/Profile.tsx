@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   ChevronRight,
   Loader2,
+  Trash2, // Added for deleting
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
@@ -26,7 +27,6 @@ interface Address {
   is_default: boolean;
 }
 
-// --- Main Profile Component ---
 const Profile = () => {
   const { user, logout } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -48,6 +48,45 @@ const Profile = () => {
       console.error("Failed to fetch addresses:", error);
     } finally {
       setLoadingAddresses(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this address?"))
+      return;
+
+    try {
+      const token = localStorage.getItem("grocygo_token");
+      const response = await fetch(
+        `http://localhost:5000/api/addresses/${id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (response.ok) {
+        fetchAddresses(); // Refresh the list
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+    }
+  };
+
+  const handleSetDefault = async (id: number) => {
+    try {
+      const token = localStorage.getItem("grocygo_token");
+      const response = await fetch(
+        `http://localhost:5000/api/addresses/${id}/default`,
+        {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (response.ok) {
+        fetchAddresses(); // Refresh the list
+      }
+    } catch (error) {
+      console.error("Setting default failed:", error);
     }
   };
 
@@ -140,26 +179,43 @@ const Profile = () => {
               addresses.map((addr) => (
                 <div
                   key={addr.id}
-                  className="flex items-start gap-4 p-5 bg-[#F8FAFC] rounded-2xl border border-slate-50"
+                  className="flex items-start justify-between p-5 bg-[#F8FAFC] rounded-2xl border border-slate-50 group hover:border-[#22C55E]/30 transition-all"
                 >
-                  <div className="p-3 bg-white rounded-xl shadow-sm">
-                    <MapPin className="h-5 w-5 text-[#22C55E]" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">
-                        {addr.label}
-                      </span>
-                      {addr.is_default && (
-                        <span className="text-[10px] bg-[#DCFCE7] text-[#166534] px-2 py-0.5 rounded-full font-bold uppercase">
-                          Default
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-white rounded-xl shadow-sm">
+                      <MapPin className="h-5 w-5 text-[#22C55E]" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900">
+                          {addr.label}
                         </span>
+                        {addr.is_default && (
+                          <span className="text-[10px] bg-[#DCFCE7] text-[#166534] px-2 py-0.5 rounded-full font-bold uppercase">
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-slate-500 text-sm">
+                        {addr.street_address}, {addr.city}, {addr.state}
+                      </p>
+
+                      {!addr.is_default && (
+                        <button
+                          onClick={() => handleSetDefault(addr.id)}
+                          className="mt-2 text-xs font-bold text-[#22C55E] hover:underline"
+                        >
+                          Set as default
+                        </button>
                       )}
                     </div>
-                    <p className="text-slate-500 text-sm">
-                      {addr.street_address}, {addr.city}, {addr.state}
-                    </p>
                   </div>
+                  <button
+                    onClick={() => handleDelete(addr.id)}
+                    className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
                 </div>
               ))
             ) : (
@@ -227,7 +283,6 @@ const Profile = () => {
 };
 
 // --- Sub-Components ---
-
 const InfoCard = ({ icon, label, value }: any) => (
   <div className="flex items-center gap-4 p-4 bg-[#F8FAFC] rounded-2xl border border-slate-50">
     <div className="p-3 bg-white rounded-xl shadow-sm">{icon}</div>
@@ -287,13 +342,9 @@ const EditProfileForm = ({ user, onClose }: any) => {
         updateUser({ name, phone });
         alert("Profile updated successfully!");
         onClose();
-      } else {
-        const data = await response.json();
-        alert(data.message || "Failed to update profile");
       }
     } catch (error) {
       console.error(error);
-      alert("Network error occurred");
     } finally {
       setLoading(false);
     }
@@ -374,18 +425,12 @@ const AddAddressForm = ({
           is_default: false,
         }),
       });
-
-      const data = await response.json();
-
       if (response.ok) {
         onSuccess();
         onClose();
-      } else {
-        alert(data.message || "Failed to add address");
       }
     } catch (error) {
       console.error(error);
-      alert("Network error: Check your backend connection");
     } finally {
       setLoading(false);
     }
@@ -427,14 +472,14 @@ const AddAddressForm = ({
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 py-4 font-bold text-slate-500 border border-slate-200 rounded-2xl hover:bg-slate-50 transition-colors"
+          className="flex-1 py-4 font-bold text-slate-500 border border-slate-200 rounded-2xl"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 py-4 font-bold text-white bg-[#22C55E] rounded-2xl hover:bg-[#1eb054] transition-all disabled:opacity-50"
+          className="flex-1 py-4 font-bold text-white bg-[#22C55E] rounded-2xl"
         >
           {loading ? "Adding..." : "Add Address"}
         </button>
