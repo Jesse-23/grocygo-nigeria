@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, googleAuth, getProfile, updateProfile } from '../controllers/authController';
+import { register, login, googleAuth, getProfile, updateProfile, changePassword } from '../controllers/authController';
 import { verifyToken } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -18,5 +18,8 @@ router.get('/me', verifyToken, getProfile);
 
 // Protected route for updating user profile
 router.put('/update-profile', verifyToken, updateProfile);
+
+// Protected route for changing password
+router.put('/change-password', verifyToken, changePassword);
 
 export default router;

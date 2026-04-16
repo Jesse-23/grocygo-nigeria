@@ -12,12 +12,15 @@ import {
   ShieldCheck,
   ChevronRight,
   Loader2,
-  Trash2, // Added for deleting
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
+import { changePassword } from "@/api/client"; // Added import
+import { Eye, EyeOff } from "lucide-react";
 
-// --- Types ---
+const API_BASE_URL = "http://localhost:5000/api";
+
 interface Address {
   id: number;
   label: string;
@@ -31,19 +34,18 @@ const Profile = () => {
   const { user, logout } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false); // Added state
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
 
   const fetchAddresses = async () => {
     try {
       const token = localStorage.getItem("grocygo_token");
-      const response = await fetch("http://localhost:5000/api/addresses", {
+      const response = await fetch(`${API_BASE_URL}/addresses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-      if (response.ok) {
-        setAddresses(data);
-      }
+      if (response.ok) setAddresses(data);
     } catch (error) {
       console.error("Failed to fetch addresses:", error);
     } finally {
@@ -54,19 +56,13 @@ const Profile = () => {
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this address?"))
       return;
-
     try {
       const token = localStorage.getItem("grocygo_token");
-      const response = await fetch(
-        `http://localhost:5000/api/addresses/${id}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      if (response.ok) {
-        fetchAddresses(); // Refresh the list
-      }
+      const response = await fetch(`${API_BASE_URL}/addresses/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) fetchAddresses();
     } catch (error) {
       console.error("Delete failed:", error);
     }
@@ -75,16 +71,11 @@ const Profile = () => {
   const handleSetDefault = async (id: number) => {
     try {
       const token = localStorage.getItem("grocygo_token");
-      const response = await fetch(
-        `http://localhost:5000/api/addresses/${id}/default`,
-        {
-          method: "PATCH",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      if (response.ok) {
-        fetchAddresses(); // Refresh the list
-      }
+      const response = await fetch(`${API_BASE_URL}/addresses/${id}/default`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) fetchAddresses();
     } catch (error) {
       console.error("Setting default failed:", error);
     }
@@ -124,7 +115,7 @@ const Profile = () => {
           </button>
         </motion.div>
 
-        {/* Personal Information */}
+        {/* Personal Info */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900 font-serif">
@@ -156,7 +147,7 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Delivery Addresses Section */}
+        {/* Delivery Addresses */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900 font-serif">
@@ -169,7 +160,6 @@ const Profile = () => {
               <Plus className="h-4 w-4" /> Add New
             </button>
           </div>
-
           <div className="space-y-4">
             {loadingAddresses ? (
               <div className="flex justify-center py-4">
@@ -199,7 +189,6 @@ const Profile = () => {
                       <p className="text-slate-500 text-sm">
                         {addr.street_address}, {addr.city}, {addr.state}
                       </p>
-
                       {!addr.is_default && (
                         <button
                           onClick={() => handleSetDefault(addr.id)}
@@ -231,7 +220,10 @@ const Profile = () => {
           <h2 className="text-xl font-bold text-slate-900 font-serif mb-6">
             Account Settings
           </h2>
-          <button className="w-full flex items-center justify-between p-4 text-slate-600 hover:bg-slate-50 rounded-2xl transition-colors group">
+          <button
+            onClick={() => setIsPasswordModalOpen(true)}
+            className="w-full flex items-center justify-between p-4 text-slate-600 hover:bg-slate-50 rounded-2xl transition-colors group"
+          >
             <div className="flex items-center gap-4">
               <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-white transition-colors">
                 <ShieldCheck className="h-5 w-5 text-[#22C55E]" />
@@ -277,6 +269,15 @@ const Profile = () => {
             />
           </Modal>
         )}
+        {/* Change Password Modal */}
+        {isPasswordModalOpen && (
+          <Modal
+            title="Change Password"
+            onClose={() => setIsPasswordModalOpen(false)}
+          >
+            <ChangePasswordForm onClose={() => setIsPasswordModalOpen(false)} />
+          </Modal>
+        )}
       </AnimatePresence>
     </div>
   );
@@ -296,12 +297,12 @@ const InfoCard = ({ icon, label, value }: any) => (
 );
 
 const Modal = ({ title, onClose, children }: any) => (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
     <motion.div
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.9, opacity: 0 }}
-      className="bg-white rounded-[32px] w-full max-w-md p-8 shadow-2xl relative"
+      className="bg-white rounded-[32px] w-full max-w-md p-8 shadow-2xl relative my-auto"
     >
       <button
         onClick={onClose}
@@ -316,6 +317,135 @@ const Modal = ({ title, onClose, children }: any) => (
   </div>
 );
 
+const ChangePasswordForm = ({ onClose }: any) => {
+  const [formData, setFormData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [loading, setLoading] = useState(false);
+
+  // States for toggling visibility
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.newPassword !== formData.confirmPassword)
+      return alert("New passwords do not match!");
+    setLoading(true);
+    try {
+      await changePassword({
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+      });
+      alert("Password updated successfully!");
+      onClose();
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSave} className="space-y-4">
+      {/* Current Password */}
+      <div className="space-y-1">
+        <label className="text-sm font-semibold text-slate-700">
+          Current Password
+        </label>
+        <div className="relative">
+          <input
+            type={showCurrent ? "text" : "password"}
+            required
+            className="w-full p-4 pr-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#22C55E]"
+            value={formData.currentPassword}
+            onChange={(e) =>
+              setFormData({ ...formData, currentPassword: e.target.value })
+            }
+          />
+          <button
+            type="button"
+            onClick={() => setShowCurrent(!showCurrent)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          >
+            {showCurrent ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
+      </div>
+
+      {/* New Password */}
+      <div className="space-y-1">
+        <label className="text-sm font-semibold text-slate-700">
+          New Password
+        </label>
+        <div className="relative">
+          <input
+            type={showNew ? "text" : "password"}
+            required
+            className="w-full p-4 pr-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#22C55E]"
+            value={formData.newPassword}
+            onChange={(e) =>
+              setFormData({ ...formData, newPassword: e.target.value })
+            }
+          />
+          <button
+            type="button"
+            onClick={() => setShowNew(!showNew)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          >
+            {showNew ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Confirm New Password */}
+      <div className="space-y-1">
+        <label className="text-sm font-semibold text-slate-700">
+          Confirm New Password
+        </label>
+        <div className="relative">
+          <input
+            type={showConfirm ? "text" : "password"}
+            required
+            className="w-full p-4 pr-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#22C55E]"
+            value={formData.confirmPassword}
+            onChange={(e) =>
+              setFormData({ ...formData, confirmPassword: e.target.value })
+            }
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirm(!showConfirm)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          >
+            {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 py-4 font-bold text-slate-500 border border-slate-200 rounded-2xl"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex-1 py-4 font-bold text-white bg-[#22C55E] rounded-2xl disabled:opacity-50"
+        >
+          {loading ? "Updating..." : "Update Password"}
+        </button>
+      </div>
+    </form>
+  );
+};
+
 const EditProfileForm = ({ user, onClose }: any) => {
   const { updateUser } = useAuth();
   const [name, setName] = useState(user?.name || "");
@@ -327,17 +457,14 @@ const EditProfileForm = ({ user, onClose }: any) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("grocygo_token");
-      const response = await fetch(
-        "http://localhost:5000/api/auth/update-profile",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ name, phone }),
+      const response = await fetch(`${API_BASE_URL}/auth/update-profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ name, phone }),
+      });
       if (response.ok) {
         updateUser({ name, phone });
         alert("Profile updated successfully!");
@@ -393,13 +520,7 @@ const EditProfileForm = ({ user, onClose }: any) => {
   );
 };
 
-const AddAddressForm = ({
-  onClose,
-  onSuccess,
-}: {
-  onClose: () => void;
-  onSuccess: () => void;
-}) => {
+const AddAddressForm = ({ onClose, onSuccess }: any) => {
   const [label, setLabel] = useState("");
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
@@ -411,7 +532,7 @@ const AddAddressForm = ({
     setLoading(true);
     try {
       const token = localStorage.getItem("grocygo_token");
-      const response = await fetch("http://localhost:5000/api/addresses", {
+      const response = await fetch(`${API_BASE_URL}/addresses`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -452,7 +573,7 @@ const AddAddressForm = ({
         onChange={(e) => setStreet(e.target.value)}
         className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#22C55E]"
       />
-      <div className="grid grid-cols-2 gap-3 w-full">
+      <div className="grid grid-cols-2 gap-3">
         <input
           required
           placeholder="City"

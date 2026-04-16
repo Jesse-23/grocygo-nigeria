@@ -45,7 +45,7 @@ export const GoogleOAuthButton = ({
           onSuccess={handleSuccess}
           onError={handleError}
           text={buttonText}
-          width="100%"
+          width="280"
           theme="outline"
           shape="pill"
         />
