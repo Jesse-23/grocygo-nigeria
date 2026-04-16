@@ -4,19 +4,18 @@ import { handleGoogleSuccess, handleGoogleError } from "@/lib/oauth";
 interface GoogleOAuthButtonProps {
   onSuccess?: (response: any) => void;
   onError?: () => void;
-  buttonText?: "signin_with" | "signup_with" | "continue_with"; // Added prop
+  buttonText?: "signin_with" | "signup_with" | "continue_with";
 }
 
-export const GoogleOAuthButton = ({ 
-  onSuccess, 
-  onError, 
-  buttonText = "signin_with" // Default to sign in
+export const GoogleOAuthButton = ({
+  onSuccess,
+  onError,
+  buttonText = "signin_with",
 }: GoogleOAuthButtonProps) => {
-    
   const handleSuccess = (credentialResponse: any) => {
-    const response = handleGoogleSuccess(credentialResponse);
+    handleGoogleSuccess(credentialResponse);
     if (onSuccess) {
-      onSuccess(credentialResponse); // Passing the raw response for backend verification
+      onSuccess(credentialResponse);
     }
   };
 
@@ -27,15 +26,25 @@ export const GoogleOAuthButton = ({
     }
   };
 
-  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "710473140280-qiq5ohidipr6hcj6v52stkkg8pnsc5hg.apps.googleusercontent.com";
+  // Get the Client ID from environment variables
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
+  // Debug check: If this logs in your browser console, your .env isn't loading
+  if (!GOOGLE_CLIENT_ID) {
+    console.error(
+      "Google Client ID is missing! Check your .env file and restart your server.",
+    );
+  }
+
+  console.log("Current Client ID:", GOOGLE_CLIENT_ID);
 
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID || ""}>
       <div className="w-full">
         <GoogleLogin
           onSuccess={handleSuccess}
           onError={handleError}
-          text={buttonText} // Now dynamic!
+          text={buttonText}
           width="100%"
           theme="outline"
           shape="pill"
