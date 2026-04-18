@@ -5,6 +5,7 @@ import { query } from './config/db';
 import authRoutes from './routes/authRoutes';
 import productRoutes from './routes/productRoutes';
 import addressRoutes from './routes/addressRoutes';
+import cartRoutes from './routes/cartRoutes';
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/addresses', addressRoutes);
+app.use('/api/cart', cartRoutes);
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 5000;
