@@ -15,6 +15,14 @@ const ProductCard = ({ product, index = 0 }: Props) => {
   // Helper to check if item is in stock based on database column
   const hasStock = product.stock_quantity > 0;
 
+  // SMART IMAGE LOGIC: 
+  // Checks if the image_url is a full web link (Cloudinary) or a local path
+  const getImageUrl = (url: string) => {
+    if (!url) return "/images/placeholder.png"; // Fallback if url is missing
+    if (url.startsWith("http")) return url;     // It's a Cloudinary/External link
+    return `http://localhost:5173${url}`;       // It's a local public folder path
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -25,8 +33,8 @@ const ProductCard = ({ product, index = 0 }: Props) => {
       <Link to={`/product/${product.id}`}>
         <div className="relative overflow-hidden aspect-square bg-secondary">
           <img
-            // Corrected to look at your frontend's public folder
-            src={`http://localhost:5173${product.image_url}`}
+            // Updated to use the smart helper function
+            src={getImageUrl(product.image_url)}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
@@ -38,7 +46,6 @@ const ProductCard = ({ product, index = 0 }: Props) => {
             </span>
           )}
 
-          {/* Logic updated: Show Out of Stock if stock_quantity is 0 or less */}
           {!hasStock && (
             <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
               <span className="bg-card text-foreground text-sm font-semibold px-4 py-2 rounded-full">
@@ -76,7 +83,6 @@ const ProductCard = ({ product, index = 0 }: Props) => {
 
           <motion.button
             whileTap={{ scale: 0.9 }}
-            // Only allow adding if hasStock is true
             onClick={() => hasStock && addItem(product)}
             disabled={!hasStock}
             className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:shadow-button transition-all disabled:opacity-40 disabled:cursor-not-allowed"

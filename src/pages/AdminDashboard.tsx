@@ -10,21 +10,30 @@ import {
   ShoppingBag,
   X,
   Loader2,
-  ImagePlus, // Added for the upload UI
+  ImagePlus,
 } from "lucide-react";
 import { formatNaira, Product } from "@/data/products";
 import { fetchProducts } from "@/api/client";
 import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
 
-// --- CLOUDINARY CONFIGURATION ---
+// --- CONFIGURATION ---
 const CLOUDINARY_CLOUD_NAME = "dnb9hxtvl";
 const CLOUDINARY_UPLOAD_PRESET = "grocygo_preset";
-
 const API_BASE_URL = "http://localhost:5000/api";
+
+// Define a type for our Orders
+interface Order {
+  id: number;
+  full_name: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+}
 
 const AdminDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]); // New state for orders
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -35,30 +44,27 @@ const AdminDashboard = () => {
     totalProducts: 0,
   });
 
-  // New Product Form State
   const [newProduct, setNewProduct] = useState({
     name: "",
     category: "Vegetables",
     price: "",
     stock_quantity: "",
     description: "",
-    image_url: "", // Start empty to force upload
+    image_url: "",
   });
 
-  // --- CLOUDINARY UPLOAD WIDGET ---
+  // --- CLOUDINARY WIDGET ---
   const handleOpenUploadWidget = () => {
     // @ts-ignore
     if (!window.cloudinary) {
       toast.error("Cloudinary script not loaded. Check index.html");
       return;
     }
-
     // @ts-ignore
     const myWidget = window.cloudinary.createUploadWidget(
       {
         cloudName: CLOUDINARY_CLOUD_NAME,
         uploadPreset: CLOUDINARY_UPLOAD_PRESET,
-        sources: ["local", "url", "camera"],
         multiple: false,
         theme: "minimal",
       },
@@ -72,26 +78,36 @@ const AdminDashboard = () => {
     myWidget.open();
   };
 
-  // Load Dashboard Data
+  // --- DATA LOADING ---
   const loadDashboardData = async () => {
     setLoading(true);
     const token = localStorage.getItem("grocygo_token");
 
     try {
+      // Fetch Products
       const productData = await fetchProducts();
       setProducts(productData);
 
+      // Fetch Stats
       const statsRes = await fetch(`${API_BASE_URL}/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
       }
+
+      // Fetch Recent Orders
+      const ordersRes = await fetch(`${API_BASE_URL}/admin/orders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json();
+        setOrders(ordersData);
+      }
     } catch (error) {
-      console.error("Error loading admin data:", error);
-      toast.error("Failed to load dashboard data");
+      console.error("Dashboard Load Error:", error);
+      toast.error("Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -101,46 +117,75 @@ const AdminDashboard = () => {
     loadDashboardData();
   }, []);
 
+  // --- STATUS TOGGLE LOGIC ---
+  const handleStatusUpdate = async (orderId: number, newStatus: string) => {
+    const token = localStorage.getItem("grocygo_token");
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/admin/orders/${orderId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: newStatus }),
+        },
+      );
+
+      if (res.ok) {
+        // Update local state immediately
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+        );
+
+        // Refresh the stat cards (e.g. Active Deliveries count)
+        const statsRes = await fetch(`${API_BASE_URL}/admin/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStats(statsData);
+        }
+
+        toast.success(`Order #${orderId} marked as ${newStatus}`);
+      }
+    } catch (error) {
+      toast.error("Failed to update status");
+    }
+  };
+
   // DELETE Logic
   const deleteProduct = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this product?"))
-      return;
-
+    if (!window.confirm("Delete this product?")) return;
     try {
       const token = localStorage.getItem("grocygo_token");
       const res = await fetch(`${API_BASE_URL}/products/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (res.ok) {
         setProducts((prev) => prev.filter((p) => p.id !== id));
         setStats((prev) => ({
           ...prev,
           totalProducts: prev.totalProducts - 1,
         }));
-        toast.success("Product deleted successfully");
-      } else {
-        toast.error("Failed to delete product");
+        toast.success("Product deleted");
       }
     } catch (error) {
-      console.error("Delete Error:", error);
-      toast.error("An error occurred during deletion");
+      toast.error("Deletion failed");
     }
   };
 
   // ADD PRODUCT Logic
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!newProduct.image_url) {
-      toast.error("Please upload a product image first!");
+      toast.error("Upload an image first!");
       return;
     }
-
     setSubmitting(true);
     const token = localStorage.getItem("grocygo_token");
-
     try {
       const res = await fetch(`${API_BASE_URL}/products`, {
         method: "POST",
@@ -171,13 +216,10 @@ const AdminDashboard = () => {
           description: "",
           image_url: "",
         });
-        toast.success("Product added to inventory!");
-      } else {
-        toast.error("Failed to add product");
+        toast.success("Product added!");
       }
     } catch (error) {
-      console.error("Add Product Error:", error);
-      toast.error("An error occurred");
+      toast.error("Add failed");
     } finally {
       setSubmitting(false);
     }
@@ -222,7 +264,7 @@ const AdminDashboard = () => {
           Admin Dashboard
         </motion.h1>
 
-        {/* Stats Section */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {statCards.map((s, i) => (
             <motion.div
@@ -245,7 +287,73 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Product Management Table */}
+        {/* Recent Orders Table */}
+        <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden mb-8">
+          <div className="p-5 border-b border-border">
+            <h2 className="font-bold text-foreground text-lg">Recent Orders</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-secondary/50">
+                  <th className="text-left px-5 py-3 text-muted-foreground">
+                    Order ID
+                  </th>
+                  <th className="text-left px-5 py-3 text-muted-foreground">
+                    Customer
+                  </th>
+                  <th className="text-left px-5 py-3 text-muted-foreground">
+                    Amount
+                  </th>
+                  <th className="text-left px-5 py-3 text-muted-foreground">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="p-10 text-center text-muted-foreground"
+                    >
+                      No orders yet.
+                    </td>
+                  </tr>
+                ) : (
+                  orders.map((order) => (
+                    <tr
+                      key={order.id}
+                      className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors"
+                    >
+                      <td className="px-5 py-3 font-medium">#{order.id}</td>
+                      <td className="px-5 py-3">{order.full_name}</td>
+                      <td className="px-5 py-3 font-semibold">
+                        {formatNaira(order.total_amount)}
+                      </td>
+                      <td className="px-5 py-3">
+                        <select
+                          value={order.status}
+                          onChange={(e) =>
+                            handleStatusUpdate(order.id, e.target.value)
+                          }
+                          className="bg-secondary p-1 rounded border border-border text-xs outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Shipped">Shipped</option>
+                          <option value="Delivered">Delivered</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Products Table */}
         <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-border">
             <h2 className="font-bold text-foreground text-lg">Products</h2>
@@ -259,7 +367,7 @@ const AdminDashboard = () => {
           <div className="overflow-x-auto">
             {loading ? (
               <div className="p-10 text-center animate-pulse">
-                Loading dashboard data...
+                Loading dashboard...
               </div>
             ) : (
               <table className="w-full text-sm">
@@ -283,60 +391,57 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((p) => {
-                    const hasStock = p.stock_quantity > 0;
-                    return (
-                      <tr
-                        key={p.id}
-                        className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors"
-                      >
-                        <td className="px-5 py-3">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={
-                                p.image_url.startsWith("http")
-                                  ? p.image_url
-                                  : `http://localhost:5173${p.image_url}`
-                              }
-                              alt={p.name}
-                              className="w-10 h-10 rounded-lg object-cover"
-                            />
-                            <span className="font-medium text-foreground">
-                              {p.name}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3 text-muted-foreground capitalize hidden md:table-cell">
-                          {p.category}
-                        </td>
-                        <td className="px-5 py-3 font-semibold text-foreground">
-                          {formatNaira(p.price)}
-                        </td>
-                        <td className="px-5 py-3 hidden sm:table-cell">
-                          <span
-                            className={`text-xs font-semibold px-2 py-1 rounded-full ${hasStock ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}
-                          >
-                            {hasStock
-                              ? `${p.stock_quantity} in stock`
-                              : "Out of Stock"}
+                  {products.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors"
+                    >
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={
+                              p.image_url.startsWith("http")
+                                ? p.image_url
+                                : `http://localhost:5173${p.image_url}`
+                            }
+                            alt={p.name}
+                            className="w-10 h-10 rounded-lg object-cover"
+                          />
+                          <span className="font-medium text-foreground">
+                            {p.name}
                           </span>
-                        </td>
-                        <td className="px-5 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors">
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => deleteProduct(p.id)}
-                              className="p-1.5 hover:bg-destructive/10 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 text-muted-foreground capitalize hidden md:table-cell">
+                        {p.category}
+                      </td>
+                      <td className="px-5 py-3 font-semibold text-foreground">
+                        {formatNaira(p.price)}
+                      </td>
+                      <td className="px-5 py-3 hidden sm:table-cell">
+                        <span
+                          className={`text-xs font-semibold px-2 py-1 rounded-full ${p.stock_quantity > 0 ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}
+                        >
+                          {p.stock_quantity > 0
+                            ? `${p.stock_quantity} in stock`
+                            : "Out of Stock"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground">
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteProduct(p.id)}
+                            className="p-1.5 hover:bg-destructive/10 rounded-lg text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             )}
@@ -344,7 +449,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* ADD PRODUCT MODAL */}
+      {/* Add Product Modal remains exactly as you had it */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -363,12 +468,10 @@ const AdminDashboard = () => {
               <h2 className="text-xl font-bold mb-6 text-foreground">
                 Add New Product
               </h2>
-
               <form
                 onSubmit={handleAddProduct}
                 className="grid md:grid-cols-[1fr,2fr] gap-6"
               >
-                {/* Image Section */}
                 <div className="space-y-2 text-center">
                   <label className="text-xs font-semibold text-muted-foreground uppercase">
                     Image
@@ -401,8 +504,6 @@ const AdminDashboard = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Form Fields Section */}
                 <div className="space-y-4">
                   <div>
                     <label className="text-xs font-semibold text-muted-foreground uppercase ml-1">
