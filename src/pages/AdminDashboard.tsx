@@ -12,6 +12,15 @@ import {
   Loader2,
   ImagePlus,
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts"; // Import Recharts components
 import { formatNaira, Product } from "@/data/products";
 import { fetchProducts } from "@/api/client";
 import Navbar from "@/components/Navbar";
@@ -33,7 +42,8 @@ interface Order {
 
 const AdminDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]); // New state for orders
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [revenueTrends, setRevenueTrends] = useState([]); // State for the chart data
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -84,11 +94,11 @@ const AdminDashboard = () => {
     const token = localStorage.getItem("grocygo_token");
 
     try {
-      // Fetch Products
+      // 1. Fetch Products
       const productData = await fetchProducts();
       setProducts(productData);
 
-      // Fetch Stats
+      // 2. Fetch Stats
       const statsRes = await fetch(`${API_BASE_URL}/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -97,13 +107,27 @@ const AdminDashboard = () => {
         setStats(statsData);
       }
 
-      // Fetch Recent Orders
+      // 3. Fetch Recent Orders
       const ordersRes = await fetch(`${API_BASE_URL}/admin/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (ordersRes.ok) {
         const ordersData = await ordersRes.json();
         setOrders(ordersData);
+      }
+
+      // 4. Fetch Revenue Trends (The Chart Data)
+      const trendRes = await fetch(`${API_BASE_URL}/admin/revenue-trends`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (trendRes.ok) {
+        const trendData = await trendRes.json();
+        // Format revenue to number for Recharts
+        const formattedTrends = trendData.map((d: any) => ({
+          ...d,
+          revenue: parseFloat(d.revenue),
+        }));
+        setRevenueTrends(formattedTrends);
       }
     } catch (error) {
       console.error("Dashboard Load Error:", error);
@@ -134,20 +158,11 @@ const AdminDashboard = () => {
       );
 
       if (res.ok) {
-        // Update local state immediately
         setOrders((prev) =>
           prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
         );
-
-        // Refresh the stat cards (e.g. Active Deliveries count)
-        const statsRes = await fetch(`${API_BASE_URL}/admin/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (statsRes.ok) {
-          const statsData = await statsRes.json();
-          setStats(statsData);
-        }
-
+        // Refresh trends and stats to reflect changes
+        loadDashboardData();
         toast.success(`Order #${orderId} marked as ${newStatus}`);
       }
     } catch (error) {
@@ -285,6 +300,62 @@ const AdminDashboard = () => {
               <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
             </motion.div>
           ))}
+        </div>
+
+        {/* --- REVENUE TREND CHART SECTION --- */}
+        <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-card">
+          <h3 className="font-bold text-foreground mb-6">
+            Revenue Trend (Last 7 Days)
+          </h3>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueTrends}>
+                <defs>
+                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#374151"
+                />
+                <XAxis
+                  dataKey="date"
+                  stroke="#9ca3af"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  dy={10}
+                />
+                <YAxis
+                  stroke="#9ca3af"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) => `₦${val / 1000}k`}
+                />
+                <Tooltip
+                  formatter={(value: number) => [formatNaira(value), "Revenue"]}
+                  contentStyle={{
+                    backgroundColor: "#1f2937",
+                    border: "none",
+                    borderRadius: "8px",
+                    color: "#fff",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#10b981"
+                  fillOpacity={1}
+                  fill="url(#colorRev)"
+                  strokeWidth={3}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Recent Orders Table */}
@@ -449,7 +520,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Add Product Modal remains exactly as you had it */}
+      {/* Modal Section */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">

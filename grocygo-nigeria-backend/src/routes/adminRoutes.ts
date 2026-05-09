@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { 
   getAdminStats, 
   getRecentOrders, 
+  getRevenueTrends, 
   updateOrderStatus 
 } from '../controllers/adminController';
 import { verifyToken, verifyAdmin } from '../middleware/authMiddleware';
@@ -25,5 +26,7 @@ router.get('/orders', verifyToken, verifyAdmin, getRecentOrders);
  * PATCH /api/admin/orders/:id/status - Update a specific order status
  */
 router.patch('/orders/:id/status', verifyToken, verifyAdmin, updateOrderStatus);
+
+router.get('/revenue-trends', verifyToken, verifyAdmin, getRevenueTrends);
 
 export default router;

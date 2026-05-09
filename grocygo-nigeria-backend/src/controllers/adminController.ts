@@ -65,7 +65,7 @@ export const getRecentOrders = async (req: Request, res: Response) => {
         o.status, 
         o.created_at, 
         o.delivery_address,
-        u.name AS full_name, -- Changed from full_name to name
+        u.name AS full_name, 
         u.email 
       FROM orders o 
       LEFT JOIN users u ON o.user_id = u.id 
@@ -73,10 +73,32 @@ export const getRecentOrders = async (req: Request, res: Response) => {
       LIMIT 50
     `);
     
-    console.log(`Admin Data Fetch: Found ${orders.rows.length} orders.`);
     res.json(orders.rows);
   } catch (error) {
     console.error("Detailed Fetch Error:", error);
     res.status(500).json({ message: "Failed to fetch orders" });
+  }
+};
+
+/**
+ * 4. NEW: Get Revenue Trends
+ * Groups daily revenue for the last 7 days to power the Recharts area chart.
+ */
+export const getRevenueTrends = async (req: Request, res: Response) => {
+  try {
+    const result = await query(`
+      SELECT 
+        TO_CHAR(DATE_TRUNC('day', created_at), 'DD Mon') as date, 
+        SUM(total_amount) as revenue
+      FROM orders
+      WHERE created_at > NOW() - INTERVAL '7 days'
+      GROUP BY DATE_TRUNC('day', created_at)
+      ORDER BY DATE_TRUNC('day', created_at) ASC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Revenue Trend Error:", error);
+    res.status(500).json({ message: "Failed to fetch revenue trends" });
   }
 };
