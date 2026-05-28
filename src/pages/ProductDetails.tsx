@@ -2,12 +2,19 @@ import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Minus, Plus, ShoppingCart, Star } from "lucide-react";
-import { formatNaira } from "@/data/products"; // Removed 'products' array import
-import { fetchProducts } from "@/api/client"; // Use the helper we created earlier
+import { formatNaira } from "@/data/products";
+import { fetchProducts } from "@/api/client";
 import { useCart } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+
+// Helper function to handle image URLs safely
+const getImageUrl = (url: string) => {
+  if (!url) return "/placeholder.svg";
+  if (url.startsWith("http")) return url;
+  return `http://localhost:5173${url.startsWith("/") ? "" : "/"}${url}`;
+};
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -89,7 +96,7 @@ const ProductDetails = () => {
             className="aspect-square rounded-2xl overflow-hidden bg-secondary border border-border shadow-sm"
           >
             <img 
-              src={`http://localhost:5173${product.image_url}`} 
+              src={getImageUrl(product.image_url)} 
               alt={product.name} 
               className="w-full h-full object-cover" 
             />

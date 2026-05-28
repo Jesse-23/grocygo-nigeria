@@ -40,14 +40,15 @@ export const GoogleOAuthButton = ({
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID || ""}>
-      <div className="w-full">
+      {/* Flex container explicitly centers the Google iframe */}
+      <div className="w-full flex justify-center">
         <GoogleLogin
           onSuccess={handleSuccess}
           onError={handleError}
           text={buttonText}
-          width="280"
           theme="outline"
           shape="pill"
+          // Removed width="280" so it scales naturally and centers perfectly
         />
       </div>
     </GoogleOAuthProvider>

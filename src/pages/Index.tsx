@@ -4,6 +4,7 @@ import { Search, ArrowRight, Truck, ShieldCheck, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { fetchProducts } from "@/api/client";
 import { categories, testimonials } from "@/data/products";
+import { useAuth } from "@/context/AuthContext";
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -28,6 +29,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [dbProducts, setDbProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useAuth(); // Brought in auth context
 
   useEffect(() => {
     const getFeatured = async () => {
@@ -175,7 +177,7 @@ const Index = () => {
         <div className="flex items-center justify-between mb-10">
           <h2 className="font-heading text-3xl font-bold">Popular Products</h2>
           <Link
-            to="/shop"
+            to={isAuthenticated ? "/shop" : "/login"} // Redirects to login if not authenticated
             className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
           >
             View all <ArrowRight className="h-4 w-4" />

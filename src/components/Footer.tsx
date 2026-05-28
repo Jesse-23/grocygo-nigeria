@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Facebook, Twitter, Instagram } from "lucide-react"; // Imported crisp icons
 
 const Footer = () => (
   <footer className="bg-foreground text-primary-foreground mt-20">
@@ -29,11 +30,16 @@ const Footer = () => (
         </div>
         <div>
           <h4 className="font-semibold mb-3">Follow Us</h4>
-          <div className="flex gap-4 text-xl">
-            <span className="cursor-pointer hover:scale-110 transition-transform">📘</span>
-            <span className="cursor-pointer hover:scale-110 transition-transform">🐦</span>
-            <span className="cursor-pointer hover:scale-110 transition-transform">📸</span>
-            <span className="cursor-pointer hover:scale-110 transition-transform">📱</span>
+          <div className="flex gap-4">
+            <a href="#" className="cursor-pointer hover:scale-110 hover:text-accent transition-all">
+              <Facebook className="h-5 w-5" />
+            </a>
+            <a href="#" className="cursor-pointer hover:scale-110 hover:text-accent transition-all">
+              <Twitter className="h-5 w-5" />
+            </a>
+            <a href="#" className="cursor-pointer hover:scale-110 hover:text-accent transition-all">
+              <Instagram className="h-5 w-5" />
+            </a>
           </div>
         </div>
       </div>

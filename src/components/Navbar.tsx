@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, User, Menu, X, LogOut, UserCircle } from "lucide-react"; // Added UserCircle
+import { ShoppingCart, User, Menu, X, LogOut, UserCircle } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
@@ -13,7 +13,7 @@ const Navbar = () => {
   const links = [
     { to: "/", label: "Home" },
     { to: "/shop", label: "Shop" },
-    { to: "/cart", label: "Cart" },
+    { to: isAuthenticated ? "/cart" : "/login", label: "Cart" }, // Guards the cart link
     // Only show "My Orders" if logged in, otherwise it's redundant
     ...(isAuthenticated ? [{ to: "/dashboard", label: "My Orders" }] : []),
   ];
@@ -40,7 +40,8 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link to="/cart" className="relative p-2 hover:bg-secondary rounded-full transition-colors">
+          {/* Auth guard for the Cart icon */}
+          <Link to={isAuthenticated ? "/cart" : "/login"} className="relative p-2 hover:bg-secondary rounded-full transition-colors">
             <ShoppingCart className="h-5 w-5 text-foreground" />
             {totalItems > 0 && (
               <motion.span

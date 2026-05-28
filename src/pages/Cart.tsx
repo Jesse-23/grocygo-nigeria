@@ -6,6 +6,13 @@ import { formatNaira } from "@/data/products";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+// Helper function to handle image URLs safely
+const getImageUrl = (url: string) => {
+  if (!url) return "/placeholder.svg";
+  if (url.startsWith("http")) return url;
+  return `http://localhost:5173${url.startsWith("/") ? "" : "/"}${url}`;
+};
+
 const Cart = () => {
   const { items, updateQuantity, removeItem, totalPrice } = useCart();
   const delivery = items.length > 0 ? 1500 : 0;
@@ -51,7 +58,7 @@ const Cart = () => {
                 className="flex gap-4 bg-card rounded-xl border border-border p-4 shadow-card"
               >
                 <img 
-                  src={`http://localhost:5173${item.product.image_url}`} 
+                  src={getImageUrl(item.product.image_url)} 
                   alt={item.product.name} 
                   className="w-20 h-20 rounded-lg object-cover" 
                 />
