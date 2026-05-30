@@ -1,15 +1,19 @@
 import { useState, useMemo, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { fetchProducts } from "@/api/client"; 
 import { categories } from "@/data/products"; 
+import { useAuth } from "@/context/AuthContext";
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const Shop = () => {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth(); // Bring in auth state
+
   const initialQ = params.get("q") || "";
   const initialCat = params.get("category") || "";
 
@@ -19,8 +23,19 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState(initialCat);
   const [sortBy, setSortBy] = useState("default");
 
+  // Authentication Guard
+  useEffect(() => {
+    // If the user is definitively not authenticated, redirect to signup
+    if (!isAuthenticated) {
+      navigate("/signup");
+    }
+  }, [isAuthenticated, navigate]);
+
   // Fetch products whenever search or category changes
   useEffect(() => {
+    // Prevent fetching if we are about to redirect anyway
+    if (!isAuthenticated) return;
+
     const getProducts = async () => {
       setLoading(true); // Show loader while fetching
       try {
@@ -40,7 +55,7 @@ const Shop = () => {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [search, selectedCategory]); // Triggers API call on change
+  }, [search, selectedCategory, isAuthenticated]); // Triggers API call on change
 
   const sortedProducts = useMemo(() => {
     let list = [...dbProducts];
@@ -56,6 +71,9 @@ const Shop = () => {
     
     return list;
   }, [sortBy, dbProducts]);
+
+  // Prevent rendering the UI while the redirect is happening
+  if (!isAuthenticated) return null;
 
   return (
     <div className="min-h-screen bg-background">
