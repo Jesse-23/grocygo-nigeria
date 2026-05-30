@@ -13,13 +13,8 @@ dotenv.config();
 
 const app: Application = express();
 
-// Middleware - Back to the friendly configuration!
-app.use(cors({
-  origin: '*', // Allows any origin (what you had originally)
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
+// Middleware 
+app.use(cors());
 app.use(express.json()); // Allows the server to read JSON sent from your frontend
 
 // Routes
@@ -50,6 +45,7 @@ app.get('/test-db', async (req: Request, res: Response) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
