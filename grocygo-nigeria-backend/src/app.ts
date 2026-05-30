@@ -13,10 +13,9 @@ dotenv.config();
 
 const app: Application = express();
 
-// Middleware - Dynamic CORS configuration for all devices
+// Middleware - Back to the friendly configuration!
 app.use(cors({
-  origin: true, // The magic bullet: dynamically reflects the requesting origin
-  credentials: true, 
+  origin: '*', // Allows any origin (what you had originally)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
