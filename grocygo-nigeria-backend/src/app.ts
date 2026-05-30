@@ -28,6 +28,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 
+// Body Parser - This allows the server to read JSON bodies from the frontend
+app.use(express.json()); 
+
 // Routes
 
 // 1. Health Check
