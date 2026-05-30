@@ -13,8 +13,17 @@ dotenv.config();
 
 const app: Application = express();
 
-// Middleware 
-app.use(cors());
+// Middleware - Strict CORS configuration for Mobile compatibility
+app.use(cors({
+  origin: [
+    'http://localhost:5173', // local testing environment
+    'https://grocygo-nigeria.pxxl.click' // live mobile/desktop frontend
+  ],
+  credentials: true, // Crucial for Google OAuth and cookies on mobile
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json()); // Allows the server to read JSON sent from your frontend
 
 // Routes
@@ -45,7 +54,6 @@ app.get('/test-db', async (req: Request, res: Response) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api/auth', authRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
