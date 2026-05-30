@@ -1,4 +1,9 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+// Dynamically check if the user is on the live site or local testing
+const isLiveSite = window.location.hostname !== "localhost";
+
+const API_BASE_URL = isLiveSite 
+  ? "https://grocygo-nigeria.onrender.com/api" 
+  : "http://localhost:5000/api";
 
 /**
  * Fetches products from the backend with optional filtering.
