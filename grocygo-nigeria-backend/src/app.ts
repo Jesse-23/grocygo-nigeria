@@ -13,13 +13,10 @@ dotenv.config();
 
 const app: Application = express();
 
-// Middleware - Strict CORS configuration for Mobile compatibility
+// Middleware - Dynamic CORS configuration for all devices
 app.use(cors({
-  origin: [
-    'http://localhost:5173', // local testing environment
-    'https://grocygo-nigeria.pxxl.click' // live mobile/desktop frontend
-  ],
-  credentials: true, // Crucial for Google OAuth and cookies on mobile
+  origin: true, // The magic bullet: dynamically reflects the requesting origin
+  credentials: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
