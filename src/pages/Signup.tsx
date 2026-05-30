@@ -33,11 +33,18 @@ const Signup = () => {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/google', {
+      // DYNAMIC URL LOGIC: Checks if user is on localhost or live site
+      const isLiveSite = window.location.hostname !== "localhost";
+      const GOOGLE_AUTH_URL = isLiveSite 
+        ? "https://grocygo-nigeria.onrender.com/api/auth/google" 
+        : "http://localhost:5000/api/auth/google";
+
+      const response = await fetch(GOOGLE_AUTH_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokenId: credentialResponse.credential }),
       });
+      
       const data = await response.json();
       if (response.ok) {
         login(data.user, data.token);
