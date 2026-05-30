@@ -45,7 +45,7 @@ const Index = () => {
     getFeatured();
   }, []);
 
-  const featured = dbProducts.slice(0, 4);
+  const featured = [...dbProducts].sort(() => 0.5 - Math.random()).slice(0, 4);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
