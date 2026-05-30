@@ -13,9 +13,20 @@ dotenv.config();
 
 const app: Application = express();
 
-// Middleware 
-app.use(cors());
-app.use(express.json()); // Allows the server to read JSON sent from your frontend
+// Middleware - The Ultimate CORS Debugger & Fix
+app.use(cors({
+  origin: function (origin, callback) {
+    // This logs the exact URL your device is sending to the server
+    console.log("🚪 Incoming Origin Knocking:", origin); 
+    
+    // This dynamically allows whoever is knocking to come in
+    // It safely bypasses the strict credentials rule by reflecting their exact name back
+    callback(null, origin || true); 
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
 
 // Routes
 
