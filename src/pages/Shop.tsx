@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { Search, ShoppingCart } from "lucide-react";
 import { fetchProducts } from "@/api/client"; 
 import { categories } from "@/data/products"; 
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,6 +14,7 @@ const Shop = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth(); // Bring in auth state
+  const { totalItems } = useCart(); // Bring in cart state for the floating button
 
   const initialQ = params.get("q") || "";
   const initialCat = params.get("category") || "";
@@ -21,7 +23,6 @@ const Shop = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(initialQ);
   const [selectedCategory, setSelectedCategory] = useState(initialCat);
-  const [sortBy, setSortBy] = useState("default");
 
   // Authentication Guard
   useEffect(() => {
@@ -59,24 +60,15 @@ const Shop = () => {
 
   const sortedProducts = useMemo(() => {
     let list = [...dbProducts];
-    
-    // We only handle Sorting here, because Filtering is now done by Postgres
-    if (sortBy === "price-low") {
-      list.sort((a, b) => Number(a.price) - Number(b.price));
-    } else if (sortBy === "price-high") {
-      list.sort((a, b) => Number(b.price) - Number(a.price));
-    } else if (sortBy === "popular") {
-      list.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
-    }
-    
+    // Default sorting logic (if any) can be applied here, or just return the list
     return list;
-  }, [sortBy, dbProducts]);
+  }, [dbProducts]);
 
   // Prevent rendering the UI while the redirect is happening
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative pb-20">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <motion.h1
@@ -87,47 +79,11 @@ const Shop = () => {
           Shop Groceries
         </motion.h1>
 
-        {/* Search and Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="flex-1 flex items-center bg-card border border-border rounded-lg px-4 py-2">
-            <Search className="h-4 w-4 text-muted-foreground mr-2" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground"
-            />
-          </div>
-          
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-card border border-border rounded-lg px-4 py-2 text-sm text-foreground outline-none cursor-pointer"
-          >
-            <option value="">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-card border border-border rounded-lg px-4 py-2 text-sm text-foreground outline-none cursor-pointer"
-          >
-            <option value="default">Sort by</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-            <option value="popular">Popularity</option>
-          </select>
-        </div>
-
-        {/* Category pills */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        {/* Category pills - Horizontally Scrollable */}
+        <div className="flex overflow-x-auto gap-2 mb-4 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <button
             onClick={() => setSelectedCategory("")}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+            className={`px-4 py-1.5 whitespace-nowrap rounded-full text-sm font-medium transition-all ${
               !selectedCategory ? "bg-primary text-primary-foreground shadow-button" : "bg-secondary text-secondary-foreground hover:bg-primary/10"
             }`}
           >
@@ -137,13 +93,25 @@ const Shop = () => {
             <button
               key={c.id}
               onClick={() => setSelectedCategory(c.id === selectedCategory ? "" : c.id)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+              className={`px-4 py-1.5 whitespace-nowrap rounded-full text-sm font-medium transition-all ${
                 selectedCategory === c.id ? "bg-primary text-primary-foreground shadow-button" : "bg-secondary text-secondary-foreground hover:bg-primary/10"
               }`}
             >
               {c.icon} {c.name}
             </button>
           ))}
+        </div>
+
+        {/* Search Bar Under Categories */}
+        <div className="flex items-center bg-card border border-border rounded-lg px-4 py-2 mb-8">
+          <Search className="h-4 w-4 text-muted-foreground mr-2" />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground"
+          />
         </div>
 
         {/* Products Grid */}
@@ -169,6 +137,19 @@ const Shop = () => {
         )}
       </div>
       <Footer />
+
+      {/* Floating Action Button */}
+      <Link
+        to={isAuthenticated ? "/cart" : "/login"}
+        className="fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-2xl z-50 hover:scale-105 transition-transform flex items-center justify-center"
+      >
+        <ShoppingCart className="h-6 w-6" />
+        {totalItems > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+            {totalItems}
+          </span>
+        )}
+      </Link>
     </div>
   );
 };

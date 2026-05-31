@@ -1,20 +1,16 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, User, Menu, X, LogOut, UserCircle } from "lucide-react";
-import { useCart } from "@/context/CartContext";
+import { User, Menu, X, LogOut, UserCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = () => {
-  const { totalItems } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const links = [
     { to: "/", label: "Home" },
     { to: "/shop", label: "Shop" },
-    { to: isAuthenticated ? "/cart" : "/login", label: "Cart" }, // Guards the cart link
-    // Only show "My Orders" if logged in, otherwise it's redundant
     ...(isAuthenticated ? [{ to: "/dashboard", label: "My Orders" }] : []),
   ];
 
@@ -40,24 +36,10 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Auth guard for the Cart icon */}
-          <Link to={isAuthenticated ? "/cart" : "/login"} className="relative p-2 hover:bg-secondary rounded-full transition-colors">
-            <ShoppingCart className="h-5 w-5 text-foreground" />
-            {totalItems > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-0.5 -right-0.5 bg-accent text-accent-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
-              >
-                {totalItems}
-              </motion.span>
-            )}
-          </Link>
-
+          
           {/* Logic for Authenticated vs Guest */}
           {isAuthenticated ? (
             <div className="hidden md:flex items-center gap-4">
-              {/* Linked Name to Profile */}
               <Link to="/profile" className="flex items-center gap-2 px-3 py-1.5 hover:bg-secondary rounded-full transition-all border border-transparent hover:border-border">
                 <div className="h-6 w-6 bg-primary/10 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-primary" />
